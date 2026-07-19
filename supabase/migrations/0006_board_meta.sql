@@ -20,10 +20,11 @@ drop policy if exists board_meta_authenticated_all on public.board_meta;
 create policy board_meta_authenticated_all on public.board_meta
   for all to authenticated using (true) with check (true);
 
--- Seed exactly one row with the canonical VFP (only if the table is empty, so
--- re-running never clobbers an edited value).
+-- Seed exactly one row with the canonical board-wide VFP (only if the table is
+-- empty, so re-running never clobbers an edited value). Note this is the OVERALL
+-- board VFP from the official template — distinct from Division 7's VFP.
 insert into public.board_meta (vfp)
-select 'A viable, expanding OT Committee'
+select 'Volumes of public moved up The Bridge to full OT'
 where not exists (select 1 from public.board_meta);
 
 select id, vfp from public.board_meta;
