@@ -3,7 +3,8 @@ export type EntityKind =
   | 'departments'
   | 'sections'
   | 'posts'
-  | 'post_holders';
+  | 'post_holders'
+  | 'board_meta';
 
 export type Division = {
   id: string;
@@ -86,6 +87,12 @@ export type ExecTier = {
   execs: ExecPost[];
 };
 
+/** Board-level settings (a single row). Currently just the overall board VFP. */
+export type BoardMeta = {
+  id: string;
+  vfp: string | null;
+};
+
 // The overview carries the FULL division tree (departments → sections → posts →
 // holders). The desktop layout reads just the labels; the mobile drawer renders
 // the posts. Same data, two layouts — no second fetch.
@@ -93,4 +100,5 @@ export type BoardOverview = {
   divisions: DivisionFull[]; // already in board order; each carries head_exec_post_id
   chairman: ExecPost | null;
   execs: ExecPost[]; // executive posts under the Chairman, in board order
+  meta: BoardMeta | null; // board-level settings (overall VFP)
 };

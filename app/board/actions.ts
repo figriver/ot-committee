@@ -11,6 +11,7 @@ const FIELD_ALLOW: Record<EntityKind, string[]> = {
   sections: ['name', 'vfp'],
   posts: ['title', 'purpose', 'product', 'is_vacant'],
   post_holders: ['holder_name'],
+  board_meta: ['vfp'],
 };
 
 // Nullable text fields: an empty string is stored as NULL.

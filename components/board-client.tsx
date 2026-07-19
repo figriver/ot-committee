@@ -26,6 +26,7 @@ import {
 import { textOn } from '@/lib/color';
 import type {
   BoardOverview,
+  BoardMeta,
   DivisionFull,
   DepartmentFull,
   SectionWithPosts,
@@ -598,12 +599,35 @@ function VLine({ left, top, height }: { left: number; top: number; height: numbe
   return <span className="cx-v" style={{ left: `${left}%`, top, height }} />;
 }
 
+/** The overall board VFP bar — editable in place, stored in board_meta. */
+function BoardVfpBar({ meta }: { meta: BoardMeta | null }) {
+  const edit = useEditable('board_meta', meta?.id ?? '', 'vfp', meta?.vfp ?? null);
+  return (
+    <div className={`ob-board-vfp${edit.pending ? ' pending' : ''}`}>
+      <span className="ob-vfp-key">OT Committee — Valuable Final Product:</span>{' '}
+      {!meta ? (
+        <span className="ob-muted">—</span>
+      ) : edit.editing ? (
+        <EditField state={edit} multiline placeholder="Overall board VFP" />
+      ) : (
+        <span
+          className="ob-board-vfp-val"
+          title="Double-click to edit"
+          onDoubleClick={() => edit.setEditing(true)}
+        >
+          {meta.vfp || <span className="ob-muted">—</span>}
+        </span>
+      )}
+    </div>
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Page roots
 // ---------------------------------------------------------------------------
 
 export function OverviewBoard({ data }: { data: BoardOverview }) {
-  const { divisions, chairman, execs } = data;
+  const { divisions, chairman, execs, meta } = data;
 
   // Group divisions under the exec they report to, keeping board (sort) order.
   const execIds = new Set(execs.map((e) => e.id));
@@ -685,11 +709,8 @@ export function OverviewBoard({ data }: { data: BoardOverview }) {
             </ul>
           </div>
 
-          {/* Board-wide VFP */}
-          <div className="ob-board-vfp">
-            <span className="ob-vfp-key">OT Committee — Valuable Final Product:</span>{' '}
-            {divisions.find((d) => d.number === 7)?.vfp ?? 'A viable, expanding OT Committee'}
-          </div>
+          {/* Board-wide VFP (editable, stored in board_meta) */}
+          <BoardVfpBar meta={meta} />
         </div>
       </div>
 

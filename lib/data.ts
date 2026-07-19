@@ -11,8 +11,21 @@ import type {
   PostWithHolders,
   ExecPost,
   ExecTier,
+  BoardMeta,
   BoardOverview,
 } from '@/lib/types';
+
+/** The single board-level settings row (overall VFP). Null if not seeded yet. */
+export async function getBoardMeta(): Promise<BoardMeta | null> {
+  const supa = getServiceClient();
+  const { data, error } = await supa
+    .from('board_meta')
+    .select('id, vfp')
+    .limit(1)
+    .maybeSingle();
+  if (error) throw new Error(`getBoardMeta: ${error.message}`);
+  return (data as BoardMeta) ?? null;
+}
 
 export async function getDivisions(): Promise<Division[]> {
   const supa = getServiceClient();
@@ -74,7 +87,11 @@ export async function getExecTier(): Promise<ExecTier> {
  */
 export async function getBoardOverview(): Promise<BoardOverview> {
   const supa = getServiceClient();
-  const [divisions, execTier] = await Promise.all([getDivisions(), getExecTier()]);
+  const [divisions, execTier, meta] = await Promise.all([
+    getDivisions(),
+    getExecTier(),
+    getBoardMeta(),
+  ]);
 
   // Pull the whole tree flat (small board), then assemble per division. The
   // desktop layout uses only the labels; the mobile drawer uses the posts.
@@ -139,6 +156,7 @@ export async function getBoardOverview(): Promise<BoardOverview> {
     divisions: divisionsFull,
     chairman: execTier.chairman,
     execs: execTier.execs,
+    meta,
   };
 }
 

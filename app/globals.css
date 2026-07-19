@@ -678,6 +678,19 @@ a {
   font-size: 13.5px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
 }
+.ob-board-vfp.pending {
+  opacity: 0.6;
+}
+.ob-board-vfp-val {
+  cursor: text;
+  border-radius: 4px;
+  padding: 0 2px;
+  transition: background 0.12s;
+}
+.ob-board-vfp-val:hover {
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.5);
+}
 .ob-vfp-key {
   font-size: 10.5px;
   text-transform: uppercase;
