@@ -44,6 +44,17 @@ export type Post = {
   sort_order: number;
 };
 
+export type MemberRole = 'admin' | 'member';
+export type MemberStatus = 'invited' | 'active';
+
+export type Member = {
+  id: string;
+  email: string;
+  role: MemberRole;
+  status: MemberStatus;
+  auth_uid: string | null;
+};
+
 export type Holder = {
   id: string;
   post_id: string;
