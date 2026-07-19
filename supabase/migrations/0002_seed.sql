@@ -18,12 +18,12 @@ insert into public.divisions (number, name, vfp, color, sort_order)
 select x.number, x.name, x.vfp, x.color, x.sort_order
 from (
               select 7 as number, 'Executive'      as name, 'A viable, expanding OT Committee' as vfp, '#1B6EC2' as color, 1 as sort_order
-  union all select 1,             'Communications',        'An established OT Committee that is capable of rapid expansion',                                                                                                     '#C8951C', 2
+  union all select 1,             'Communications',        'An established OT Committee that is capable of rapid expansion',                                                                                                     '#B8860B', 2
   union all select 2,             'Dissemination',         'Funds raised for OT Projects',                                                                                                                                      '#2E2E4F', 3
   union all select 3,             'Treasury',              'Preserved valuable assets and reserves of the OT Committee',                                                                                                         '#F2A0B0', 4
   union all select 4,             'Production',            'Completed OT projects resulting in another step towards an Ideal Org and the creation of a new civilization; Scientologists in the field moving up The Bridge to Full OT', '#2E6B1F', 5
   union all select 5,             'Qualifications',        'Projects or programs reviewed and corrected; OT Committee members trained on their posts and progressing up The Bridge',                                             '#8A8A8A', 6
-  union all select 6,             'Public',                'Active OT Committee members who are applying Scientology towards the creation of a new civilization',                                                                 '#F2C200', 7
+  union all select 6,             'Public',                'Active OT Committee members who are applying Scientology towards the creation of a new civilization',                                                                 '#FCE34E', 7
 ) as x
 where not exists (select 1 from public.divisions);
 

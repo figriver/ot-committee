@@ -26,7 +26,6 @@ import {
 import { textOn } from '@/lib/color';
 import type {
   BoardOverview,
-  DivisionOverview,
   DivisionFull,
   DepartmentFull,
   SectionWithPosts,
@@ -490,7 +489,7 @@ function DivisionColumn({
   division,
   execs,
 }: {
-  division: DivisionOverview;
+  division: DivisionFull;
   execs: ExecPost[];
 }) {
   const { open } = useMenu();
@@ -557,7 +556,7 @@ function DeptBox({
   dept,
   divisionNumber,
 }: {
-  dept: DivisionOverview['departments'][number];
+  dept: DepartmentFull;
   divisionNumber: number;
 }) {
   const { open } = useMenu();
@@ -608,8 +607,8 @@ export function OverviewBoard({ data }: { data: BoardOverview }) {
 
   // Group divisions under the exec they report to, keeping board (sort) order.
   const execIds = new Set(execs.map((e) => e.id));
-  const byExec = new Map<string, DivisionOverview[]>();
-  const unassigned: DivisionOverview[] = [];
+  const byExec = new Map<string, DivisionFull[]>();
+  const unassigned: DivisionFull[] = [];
   for (const d of divisions) {
     if (d.head_exec_post_id && execIds.has(d.head_exec_post_id)) {
       const list = byExec.get(d.head_exec_post_id) ?? [];
@@ -629,7 +628,8 @@ export function OverviewBoard({ data }: { data: BoardOverview }) {
         </span>
       </div>
 
-      <div className="ob-scroll">
+      {/* Desktop / tablet: the full horizontal org-board tree (≥ 640px). */}
+      <div className="ob-desktop ob-scroll">
         <div className="ob-board">
           {/* Whole-board tree: Chairman → executives → their division groups.
               Connectors are drawn in CSS so they always follow the assignment. */}
@@ -692,7 +692,153 @@ export function OverviewBoard({ data }: { data: BoardOverview }) {
           </div>
         </div>
       </div>
+
+      {/* Phone: a vertical drawer stack of divisions (< 640px). Same data. */}
+      <MobileBoard divisions={divisions} chairman={chairman} execs={execs} />
     </MenuProvider>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Mobile board — a vertical stack of division drawers (read view)
+// ---------------------------------------------------------------------------
+
+function MobileBoard({
+  divisions,
+  chairman,
+  execs,
+}: {
+  divisions: DivisionFull[];
+  chairman: ExecPost | null;
+  execs: ExecPost[];
+}) {
+  const [openId, setOpenId] = useState<string | null>(null);
+  const execById = new Map(execs.map((e) => [e.id, e] as const));
+
+  return (
+    <div className="ob-mobile">
+      {/* Executive structure as a simple labeled section (no connector tree). */}
+      <div className="mb-exec">
+        <div className="mb-exec-row">
+          <span className="mb-exec-label">Chairman</span>
+          <span className="mb-exec-val">
+            {chairman ? chairman.title : '—'}
+            {chairman?.is_vacant && <span className="ob-vacant">vacant</span>}
+          </span>
+        </div>
+        <div className="mb-exec-row">
+          <span className="mb-exec-label">Executives</span>
+          <span className="mb-exec-val">
+            {execs.length ? execs.map((e) => e.title).join(' · ') : '—'}
+          </span>
+        </div>
+      </div>
+
+      <div className="mb-stack">
+        {divisions.map((d) => (
+          <MobileDivision
+            key={d.id}
+            division={d}
+            exec={
+              d.head_exec_post_id
+                ? execById.get(d.head_exec_post_id) ?? null
+                : null
+            }
+            open={openId === d.id}
+            onToggle={() => setOpenId((cur) => (cur === d.id ? null : d.id))}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function MobileDivision({
+  division,
+  exec,
+  open,
+  onToggle,
+}: {
+  division: DivisionFull;
+  exec: ExecPost | null;
+  open: boolean;
+  onToggle: () => void;
+}) {
+  const color = division.color ?? '#e5e7eb';
+  const ink = textOn(color);
+  return (
+    <div className={`mb-div${open ? ' open' : ''}`}>
+      <button
+        type="button"
+        className="mb-div-head"
+        style={{ background: color, color: ink }}
+        onClick={onToggle}
+        aria-expanded={open}
+      >
+        <span className="mb-div-num" style={{ borderColor: ink, color: ink }}>
+          Div {division.number}
+        </span>
+        <span className="mb-div-name">{division.name}</span>
+        <span className="mb-div-caret" aria-hidden>
+          {open ? '▾' : '▸'}
+        </span>
+      </button>
+
+      {open && (
+        <div className="mb-div-body">
+          {exec && (
+            <div className="mb-reports">
+              Reports to <strong>{exec.title}</strong>
+            </div>
+          )}
+          {division.vfp && (
+            <div className="mb-vfp">
+              <span className="mb-vfp-key">VFP</span> {division.vfp}
+            </div>
+          )}
+
+          {division.departments.map((dept) => (
+            <div key={dept.id} className="mb-dept">
+              <div className="mb-dept-head">
+                <span className="mb-dept-num">Dept {dept.number}</span>
+                <span className="mb-dept-name">{dept.name}</span>
+              </div>
+              <div className="mb-posts">
+                {dept.sections.map((s) => (
+                  <div key={s.id} className="mb-section">
+                    <div className="mb-section-name">{s.name}</div>
+                    {s.posts.map((p) => (
+                      <MobilePost key={p.id} post={p} />
+                    ))}
+                  </div>
+                ))}
+                {dept.posts.map((p) => (
+                  <MobilePost key={p.id} post={p} />
+                ))}
+                {dept.sections.length === 0 && dept.posts.length === 0 && (
+                  <div className="mb-empty">No posts yet</div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MobilePost({ post }: { post: PostWithHolders }) {
+  const names = post.holders
+    .map((h) => h.holder_name || 'unnamed')
+    .filter(Boolean);
+  return (
+    <div className="mb-post">
+      <span className="mb-post-title">{post.title}</span>
+      {post.is_vacant && <span className="ob-vacant">vacant</span>}
+      {names.length > 0 && (
+        <span className="mb-post-holders">{names.join(', ')}</span>
+      )}
+    </div>
   );
 }
 

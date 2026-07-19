@@ -11,7 +11,6 @@ import type {
   PostWithHolders,
   ExecPost,
   ExecTier,
-  DivisionOverview,
   BoardOverview,
 } from '@/lib/types';
 
@@ -77,30 +76,67 @@ export async function getBoardOverview(): Promise<BoardOverview> {
   const supa = getServiceClient();
   const [divisions, execTier] = await Promise.all([getDivisions(), getExecTier()]);
 
+  // Pull the whole tree flat (small board), then assemble per division. The
+  // desktop layout uses only the labels; the mobile drawer uses the posts.
   let departments: Department[] = [];
+  let sections: Section[] = [];
+  let posts: Post[] = [];
+  let holders: Holder[] = [];
   if (divisions.length > 0) {
-    const { data, error } = await supa
-      .from('departments')
-      .select('*')
-      .order('sort_order', { ascending: true });
-    if (error) throw new Error(`getBoardOverview(departments): ${error.message}`);
-    departments = (data ?? []) as Department[];
+    const [deptRes, secRes, postRes] = await Promise.all([
+      supa.from('departments').select('*').order('sort_order', { ascending: true }),
+      supa.from('sections').select('*').order('sort_order', { ascending: true }),
+      supa.from('posts').select('*').order('sort_order', { ascending: true }),
+    ]);
+    if (deptRes.error) throw new Error(`getBoardOverview(departments): ${deptRes.error.message}`);
+    if (secRes.error) throw new Error(`getBoardOverview(sections): ${secRes.error.message}`);
+    if (postRes.error) throw new Error(`getBoardOverview(posts): ${postRes.error.message}`);
+    departments = (deptRes.data ?? []) as Department[];
+    sections = (secRes.data ?? []) as Section[];
+    posts = (postRes.data ?? []) as Post[];
+
+    const postIds = posts.map((p) => p.id);
+    if (postIds.length > 0) {
+      const { data, error } = await supa
+        .from('post_holders')
+        .select('*')
+        .in('post_id', postIds)
+        .order('sort_order', { ascending: true });
+      if (error) throw new Error(`getBoardOverview(holders): ${error.message}`);
+      holders = (data ?? []) as Holder[];
+    }
   }
 
-  const divisionsOverview: DivisionOverview[] = divisions.map((d) => ({
-    ...d,
-    departments: departments
-      .filter((dept) => dept.division_id === d.id)
-      .map((dept) => ({
-        id: dept.id,
-        number: dept.number,
-        name: dept.name,
-        vfp: dept.vfp,
-      })),
+  const holdersByPost = new Map<string, Holder[]>();
+  for (const h of holders) {
+    const list = holdersByPost.get(h.post_id) ?? [];
+    list.push(h);
+    holdersByPost.set(h.post_id, list);
+  }
+  const postsWithHolders: PostWithHolders[] = posts.map((p) => ({
+    ...p,
+    holders: holdersByPost.get(p.id) ?? [],
   }));
 
+  const divisionsFull: DivisionFull[] = divisions.map((d) => {
+    const deptRows = departments.filter((dept) => dept.division_id === d.id);
+    const departmentsFull: DepartmentFull[] = deptRows.map((dept) => {
+      const deptSections = sections
+        .filter((s) => s.department_id === dept.id)
+        .map((s) => ({
+          ...s,
+          posts: postsWithHolders.filter((p) => p.section_id === s.id),
+        }));
+      const deptDirectPosts = postsWithHolders.filter(
+        (p) => p.department_id === dept.id && p.section_id === null,
+      );
+      return { ...dept, sections: deptSections, posts: deptDirectPosts };
+    });
+    return { ...d, departments: departmentsFull };
+  });
+
   return {
-    divisions: divisionsOverview,
+    divisions: divisionsFull,
     chairman: execTier.chairman,
     execs: execTier.execs,
   };

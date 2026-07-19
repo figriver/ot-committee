@@ -1194,3 +1194,261 @@ a {
   font-style: italic;
   text-align: center;
 }
+
+/* ==========================================================================
+   Responsive — mobile drawer board + single-column forms (< 640px)
+   ========================================================================== */
+
+/* The phone board is rendered alongside the desktop tree and toggled by CSS,
+   so both share the same data with no duplicate fetch. */
+.ob-mobile {
+  display: none;
+}
+
+@media (max-width: 639px) {
+  /* --- swap layouts --- */
+  .ob-desktop {
+    display: none;
+  }
+  .ob-mobile {
+    display: block;
+    padding: 8px 12px 48px;
+  }
+  .ob-hint {
+    display: none;
+  }
+  .ob-topbar {
+    padding: 14px 14px 4px;
+  }
+  .ob-topbar h1 {
+    font-size: 17px;
+  }
+
+  /* --- exec summary (no connector tree on phone) --- */
+  .mb-exec {
+    background: #111827;
+    color: #e5e7eb;
+    border-radius: 10px;
+    padding: 10px 12px;
+    margin-bottom: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+  }
+  .mb-exec-row {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+  .mb-exec-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    opacity: 0.68;
+  }
+  .mb-exec-val {
+    font-size: 13px;
+    font-weight: 600;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+  }
+
+  /* --- division drawer stack --- */
+  .mb-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .mb-div {
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    overflow: hidden;
+    background: var(--panel);
+  }
+  .mb-div-head {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 13px 12px;
+    min-height: 52px;
+    border: none;
+    cursor: pointer;
+    font: inherit;
+    font-weight: 700;
+    text-align: left;
+  }
+  .mb-div-num {
+    font-size: 10px;
+    border: 1px solid currentColor;
+    border-radius: 999px;
+    padding: 1px 7px;
+    opacity: 0.92;
+    flex: none;
+  }
+  .mb-div-name {
+    flex: 1 1 auto;
+    font-size: 15px;
+    line-height: 1.2;
+  }
+  .mb-div-caret {
+    font-size: 13px;
+    opacity: 0.9;
+    flex: none;
+  }
+  .mb-div-body {
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    background: #f7f8fa;
+    border-top: 1px solid var(--line);
+  }
+  .mb-reports {
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .mb-reports strong {
+    color: var(--ink);
+  }
+  .mb-vfp {
+    font-size: 13px;
+    color: #374151;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 8px 10px;
+    line-height: 1.4;
+  }
+  .mb-vfp-key {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--muted);
+    font-weight: 700;
+    margin-right: 4px;
+  }
+  .mb-dept {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: #fff;
+    overflow: hidden;
+  }
+  .mb-dept-head {
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--line);
+    background: #f9fafb;
+  }
+  .mb-dept-num {
+    font-size: 9.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--muted);
+    display: block;
+  }
+  .mb-dept-name {
+    font-weight: 700;
+    font-size: 13.5px;
+  }
+  .mb-posts {
+    padding: 8px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+  }
+  .mb-section {
+    border-left: 2px solid var(--line-strong);
+    padding-left: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .mb-section-name {
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--muted);
+    font-weight: 600;
+  }
+  .mb-post {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+  }
+  .mb-post-title {
+    font-weight: 600;
+  }
+  .mb-post-holders {
+    font-size: 12px;
+    color: var(--muted);
+    width: 100%;
+  }
+  .mb-empty {
+    font-size: 12px;
+    color: var(--muted);
+    font-style: italic;
+  }
+
+  /* --- account bar --- */
+  .acct-bar {
+    flex-wrap: wrap;
+    row-gap: 6px;
+    padding: 8px 12px;
+  }
+  .acct-brand {
+    display: none;
+  }
+  .acct-email {
+    max-width: 55vw;
+  }
+
+  /* --- login --- */
+  .auth-wrap {
+    align-items: flex-start;
+    padding: 40px 16px 24px;
+  }
+  .auth-card {
+    padding: 22px 18px;
+  }
+
+  /* --- members: form stacks, table becomes cards --- */
+  .members-wrap {
+    padding: 18px 14px 48px;
+  }
+  .invite-form {
+    flex-direction: column;
+  }
+  .invite-input,
+  .invite-btn {
+    width: 100%;
+  }
+  .members-table thead {
+    display: none;
+  }
+  .members-table,
+  .members-table tbody,
+  .members-table tr,
+  .members-table td {
+    display: block;
+    width: 100%;
+  }
+  .members-table tr {
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    margin-bottom: 10px;
+    padding: 10px 12px;
+  }
+  .members-table td {
+    border: none;
+    padding: 3px 0;
+  }
+  .m-email {
+    font-size: 14px;
+    word-break: break-all;
+    margin-bottom: 4px;
+  }
+}

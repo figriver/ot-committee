@@ -86,12 +86,11 @@ export type ExecTier = {
   execs: ExecPost[];
 };
 
-export type DivisionOverview = Division & {
-  departments: Pick<Department, 'id' | 'number' | 'name' | 'vfp'>[];
-};
-
+// The overview carries the FULL division tree (departments → sections → posts →
+// holders). The desktop layout reads just the labels; the mobile drawer renders
+// the posts. Same data, two layouts — no second fetch.
 export type BoardOverview = {
-  divisions: DivisionOverview[]; // already in board order; each carries head_exec_post_id
+  divisions: DivisionFull[]; // already in board order; each carries head_exec_post_id
   chairman: ExecPost | null;
   execs: ExecPost[]; // executive posts under the Chairman, in board order
 };

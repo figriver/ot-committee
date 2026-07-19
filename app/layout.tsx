@@ -1,9 +1,14 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
   title: 'OT Committee Org Board',
-  description: 'OT Committee Coordination System — editable org board (slice 1a)',
+  description: 'OT Committee Coordination System — editable org board',
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
 };
 
 export default function RootLayout({
