@@ -289,13 +289,20 @@ a {
 .edit-input,
 .edit-textarea {
   font: inherit;
-  color: inherit;
+  /* Always a white field, so force dark text — never inherit the (possibly
+     white) text color of a dark division header / exec box / VFP bar. */
+  color: #111827;
   width: 100%;
   border: 1px solid var(--accent);
   border-radius: 5px;
   padding: 3px 5px;
   background: #fff;
   outline: none;
+}
+.edit-input::placeholder,
+.edit-textarea::placeholder {
+  color: #6b7280;
+  opacity: 1;
 }
 
 .edit-textarea {
@@ -862,7 +869,7 @@ a {
   padding: 4px 2px;
 }
 .ob-muted {
-  color: #9ca3af;
+  color: #6b7280;
   font-style: italic;
 }
 
@@ -919,7 +926,7 @@ a {
   background: #fef2f2;
 }
 .ctx-item.disabled {
-  color: #9ca3af;
+  color: #6b7280;
   cursor: default;
 }
 .ctx-sep {
@@ -974,10 +981,16 @@ a {
 }
 .auth-input {
   font: inherit;
+  color: #111827;
+  background: #fff;
   padding: 10px 12px;
   border: 1px solid var(--line-strong);
   border-radius: 8px;
   outline: none;
+}
+.auth-input::placeholder {
+  color: #6b7280;
+  opacity: 1;
 }
 .auth-input:focus {
   border-color: var(--accent);
@@ -1118,11 +1131,17 @@ a {
 }
 .invite-input {
   font: inherit;
+  color: #111827;
+  background: #fff;
   flex: 1 1 auto;
   padding: 9px 12px;
   border: 1px solid var(--line-strong);
   border-radius: 8px;
   outline: none;
+}
+.invite-input::placeholder {
+  color: #6b7280;
+  opacity: 1;
 }
 .invite-input:focus {
   border-color: var(--accent);
