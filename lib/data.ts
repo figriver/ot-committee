@@ -1,5 +1,6 @@
 import 'server-only';
 import { getServiceClient } from '@/lib/supabase/server';
+import { EXEC_SIDES, sideForExecTitle } from '@/lib/board-config';
 import type {
   Division,
   Department,
@@ -9,6 +10,10 @@ import type {
   DivisionFull,
   DepartmentFull,
   PostWithHolders,
+  ExecPost,
+  ExecTier,
+  DivisionOverview,
+  BoardOverview,
 } from '@/lib/types';
 
 export async function getDivisions(): Promise<Division[]> {
@@ -19,6 +24,87 @@ export async function getDivisions(): Promise<Division[]> {
     .order('sort_order', { ascending: true });
   if (error) throw new Error(`getDivisions: ${error.message}`);
   return (data ?? []) as Division[];
+}
+
+/**
+ * The board's executive tier. The Chairman is the exec post with no senior
+ * (senior_post_id is null); the two Executive Secretaries are its reports whose
+ * titles classify to a side (Communications over 1/2/7, Organization over 3/4/5/6).
+ * Driven by senior_post_id so the connector hierarchy comes from the data.
+ */
+export async function getExecTier(): Promise<ExecTier> {
+  const supa = getServiceClient();
+  const { data, error } = await supa
+    .from('posts')
+    .select('id, title, is_vacant, senior_post_id')
+    .or(
+      'title.ilike.%OT Committee Chairman%,title.ilike.%Executive Secretary%',
+    );
+  if (error) throw new Error(`getExecTier: ${error.message}`);
+  const rows = (data ?? []) as (ExecPost & { senior_post_id: string | null })[];
+
+  const chairman =
+    rows.find((r) => /chairman/i.test(r.title) && r.senior_post_id === null) ??
+    rows.find((r) => /chairman/i.test(r.title)) ??
+    null;
+
+  const execSecs = rows
+    .filter((r) => /executive secretary/i.test(r.title))
+    .map((r) => {
+      const side = sideForExecTitle(r.title);
+      return side
+        ? {
+            id: r.id,
+            title: r.title,
+            is_vacant: r.is_vacant,
+            side,
+            divisions: [...EXEC_SIDES[side].divisions],
+          }
+        : null;
+    })
+    .filter((x): x is NonNullable<typeof x> => x !== null)
+    // Communications side first (matches board order 7/1/2 then 3/4/5/6).
+    .sort((a, b) => (a.side === 'comm' ? -1 : 1) - (b.side === 'comm' ? -1 : 1));
+
+  return {
+    chairman: chairman
+      ? { id: chairman.id, title: chairman.title, is_vacant: chairman.is_vacant }
+      : null,
+    execSecs,
+  };
+}
+
+/**
+ * Whole-board overview: every division (in board order) with just its department
+ * labels, plus the executive tier. Used to render the top-down tree on /board.
+ */
+export async function getBoardOverview(): Promise<BoardOverview> {
+  const supa = getServiceClient();
+  const [divisions, execTier] = await Promise.all([getDivisions(), getExecTier()]);
+
+  let departments: Department[] = [];
+  if (divisions.length > 0) {
+    const { data, error } = await supa
+      .from('departments')
+      .select('*')
+      .order('sort_order', { ascending: true });
+    if (error) throw new Error(`getBoardOverview(departments): ${error.message}`);
+    departments = (data ?? []) as Department[];
+  }
+
+  const divisionsOverview: DivisionOverview[] = divisions.map((d) => ({
+    ...d,
+    departments: departments
+      .filter((dept) => dept.division_id === d.id)
+      .map((dept) => ({
+        id: dept.id,
+        number: dept.number,
+        name: dept.name,
+        vfp: dept.vfp,
+      })),
+  }));
+
+  return { divisions: divisionsOverview, exec: execTier };
 }
 
 /**

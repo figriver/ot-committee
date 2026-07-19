@@ -58,3 +58,30 @@ export type DepartmentFull = Department & {
   posts: PostWithHolders[]; // posts hanging directly off the department (no section)
 };
 export type DivisionFull = Division & { departments: DepartmentFull[] };
+
+// ---- Overview (whole-board tree) -------------------------------------------
+
+export type ExecPost = {
+  id: string;
+  title: string;
+  is_vacant: boolean;
+};
+
+export type ExecSecNode = ExecPost & {
+  side: 'comm' | 'org';
+  divisions: number[]; // division numbers this Exec Sec is senior over
+};
+
+export type ExecTier = {
+  chairman: ExecPost | null;
+  execSecs: ExecSecNode[];
+};
+
+export type DivisionOverview = Division & {
+  departments: Pick<Department, 'id' | 'number' | 'name' | 'vfp'>[];
+};
+
+export type BoardOverview = {
+  divisions: DivisionOverview[]; // already in board order
+  exec: ExecTier;
+};

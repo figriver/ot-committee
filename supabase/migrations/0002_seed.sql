@@ -17,13 +17,13 @@
 insert into public.divisions (number, name, vfp, color, sort_order)
 select x.number, x.name, x.vfp, x.color, x.sort_order
 from (
-              select 7 as number, 'Executive'      as name, 'A viable, expanding OT Committee' as vfp, '#C8A951' as color, 1 as sort_order
-  union all select 1,             'Communications',        'An established OT Committee that is capable of rapid expansion',                                                                                                     '#E7E9EC', 2
-  union all select 2,             'Dissemination',         'Funds raised for OT Projects',                                                                                                                                      '#D64541', 3
-  union all select 3,             'Treasury',              'Preserved valuable assets and reserves of the OT Committee',                                                                                                         '#3FA34D', 4
-  union all select 4,             'Production',            'Completed OT projects resulting in another step towards an Ideal Org and the creation of a new civilization; Scientologists in the field moving up The Bridge to Full OT', '#F2A0B0', 5
-  union all select 5,             'Qualifications',        'Projects or programs reviewed and corrected; OT Committee members trained on their posts and progressing up The Bridge',                                             '#F2C744', 6
-  union all select 6,             'Public',                'Active OT Committee members who are applying Scientology towards the creation of a new civilization',                                                                 '#4A80C4', 7
+              select 7 as number, 'Executive'      as name, 'A viable, expanding OT Committee' as vfp, '#1B6EC2' as color, 1 as sort_order
+  union all select 1,             'Communications',        'An established OT Committee that is capable of rapid expansion',                                                                                                     '#C8951C', 2
+  union all select 2,             'Dissemination',         'Funds raised for OT Projects',                                                                                                                                      '#2E2E4F', 3
+  union all select 3,             'Treasury',              'Preserved valuable assets and reserves of the OT Committee',                                                                                                         '#F2A0B0', 4
+  union all select 4,             'Production',            'Completed OT projects resulting in another step towards an Ideal Org and the creation of a new civilization; Scientologists in the field moving up The Bridge to Full OT', '#2E6B1F', 5
+  union all select 5,             'Qualifications',        'Projects or programs reviewed and corrected; OT Committee members trained on their posts and progressing up The Bridge',                                             '#8A8A8A', 6
+  union all select 6,             'Public',                'Active OT Committee members who are applying Scientology towards the creation of a new civilization',                                                                 '#F2C200', 7
 ) as x
 where not exists (select 1 from public.divisions);
 
@@ -143,6 +143,19 @@ cross join lateral unnest(
   end
 ) with ordinality as u(title, ord)
 where not exists (select 1 from public.posts);
+
+-- ---- Executive hierarchy (senior_post_id) ------------------------------------
+-- The board's top tier: the OT Committee Chairman is senior to the two Executive
+-- Secretaries (Communications side over Divs 1/2/7, Organization side over Divs
+-- 3/4/5/6) and to the OT Committee Secretary. This drives the connector tree.
+-- Idempotent: a plain UPDATE keyed by title, safe to re-run.
+update public.posts sub
+set senior_post_id = (select id from public.posts where title = 'OT Committee Chairman')
+where sub.title in (
+  'OTC Communications Executive Secretary',
+  'OTC Organization Executive Secretary',
+  'OT Committee Secretary'
+);
 
 -- ---- Confirmation counts (should be 7 / 21 / 97) -----------------------------
 select
