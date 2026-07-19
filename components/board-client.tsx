@@ -5,6 +5,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   useTransition,
@@ -13,15 +14,16 @@ import {
 import Link from 'next/link';
 import {
   addDepartment,
+  addExecutive,
   addSection,
   addPost,
   addHolder,
+  assignDivisionToExec,
   deleteRow,
   moveRow,
   updateField,
 } from '@/app/board/actions';
 import { textOn } from '@/lib/color';
-import { BOARD_ORDER } from '@/lib/board-config';
 import type {
   BoardOverview,
   DivisionOverview,
@@ -31,7 +33,6 @@ import type {
   PostWithHolders,
   Holder,
   ExecPost,
-  ExecSecNode,
   EntityKind,
 } from '@/lib/types';
 
@@ -55,17 +56,31 @@ const MenuContext = createContext<MenuCtx>({ open: () => {} });
 const useMenu = () => useContext(MenuContext);
 
 function MenuProvider({ children }: { children: ReactNode }) {
+  // `anchor` is where the user clicked; the menu is measured after render and
+  // clamped inside the viewport so it never clips off the right or bottom edge.
   const [state, setState] = useState<{ x: number; y: number; items: MenuItem[] } | null>(null);
+  const menuRef = useRef<HTMLUListElement>(null);
 
   const open = useCallback<MenuCtx['open']>((e, items) => {
     e.preventDefault();
     e.stopPropagation();
-    const W = typeof window !== 'undefined' ? window.innerWidth : 1280;
-    const H = typeof window !== 'undefined' ? window.innerHeight : 800;
-    const x = Math.min(e.clientX, W - 200);
-    const y = Math.min(e.clientY, H - 40 - items.length * 30);
-    setState({ x: Math.max(8, x), y: Math.max(8, y), items });
+    setState({ x: e.clientX, y: e.clientY, items });
   }, []);
+
+  // After the menu renders, measure it and pull it back on-screen if needed.
+  useLayoutEffect(() => {
+    if (!state || !menuRef.current) return;
+    const el = menuRef.current;
+    const rect = el.getBoundingClientRect();
+    const W = window.innerWidth;
+    const H = window.innerHeight;
+    const M = 8; // viewport margin
+    const x = Math.max(M, Math.min(state.x, W - rect.width - M));
+    const y = Math.max(M, Math.min(state.y, H - rect.height - M));
+    if (Math.abs(x - state.x) > 0.5 || Math.abs(y - state.y) > 0.5) {
+      setState((s) => (s ? { ...s, x, y } : s));
+    }
+  }, [state]);
 
   useEffect(() => {
     if (!state) return;
@@ -90,6 +105,7 @@ function MenuProvider({ children }: { children: ReactNode }) {
       {children}
       {state && (
         <ul
+          ref={menuRef}
           className="ctx-menu"
           style={{ left: state.x, top: state.y }}
           onClick={(e) => e.stopPropagation()}
@@ -387,42 +403,73 @@ function DeptColumn({ dept, color }: { dept: DepartmentFull; color: string }) {
 // Exec boxes (top tier)
 // ---------------------------------------------------------------------------
 
-function ExecBox({
-  post,
-  role,
-  className = '',
-}: {
-  post: ExecPost | null;
-  role: string;
-  className?: string;
-}) {
+/** The Chairman box. Its menu is where new executive posts are created. */
+function ChairmanBox({ post }: { post: ExecPost | null }) {
   const { open } = useMenu();
   const edit = useEditable('posts', post?.id ?? '', 'title', post?.title ?? null);
   const run = useRowActions();
   if (!post) {
     return (
-      <div className={`ob-exec ${className}`}>
-        <div className="ob-exec-role">{role}</div>
+      <div className="ob-exec chairman">
+        <div className="ob-exec-role">Chairman</div>
         <div className="ob-exec-title ob-muted">(not seeded)</div>
       </div>
     );
   }
   const items: MenuItem[] = [
     { label: 'Edit', onSelect: () => edit.setEditing(true) },
+    { label: 'Add Executive', onSelect: () => run(() => addExecutive()) },
     {
       label: post.is_vacant ? 'Mark Filled' : 'Mark Vacant',
       onSelect: () => run(() => updateField('posts', post.id, 'is_vacant', !post.is_vacant)),
     },
   ];
   return (
-    <div className={`ob-exec ${className}${edit.pending ? ' pending' : ''}`} onContextMenu={(e) => open(e, items)}>
-      <div className="ob-exec-role">{role}</div>
+    <div className={`ob-exec chairman${edit.pending ? ' pending' : ''}`} onContextMenu={(e) => open(e, items)}>
+      <div className="ob-exec-role">Chairman</div>
       <div className="ob-exec-title">
         {edit.editing ? (
           <EditField state={edit} />
         ) : (
           <span onDoubleClick={() => edit.setEditing(true)}>{post.title}</span>
         )}
+        {post.is_vacant && <span className="ob-vacant">vacant</span>}
+        <Caret items={items} tone="light" />
+      </div>
+    </div>
+  );
+}
+
+/** One executive post under the Chairman; heads the division group beneath it. */
+function ExecBox({ post }: { post: ExecPost }) {
+  const { open } = useMenu();
+  const edit = useEditable('posts', post.id, 'title', post.title);
+  const run = useRowActions();
+  const items: MenuItem[] = [
+    { label: 'Edit', onSelect: () => edit.setEditing(true) },
+    {
+      label: post.is_vacant ? 'Mark Filled' : 'Mark Vacant',
+      onSelect: () => run(() => updateField('posts', post.id, 'is_vacant', !post.is_vacant)),
+    },
+    { separator: true, label: '' },
+    {
+      label: 'Remove executive',
+      danger: true,
+      onSelect: () =>
+        confirmRemove('executive post (its divisions become unassigned)') &&
+        run(() => deleteRow('posts', post.id)),
+    },
+  ];
+  return (
+    <div className={`ob-exec execsec${edit.pending ? ' pending' : ''}`} onContextMenu={(e) => open(e, items)}>
+      <div className="ob-exec-role">Executive</div>
+      <div className="ob-exec-title">
+        {edit.editing ? (
+          <EditField state={edit} />
+        ) : (
+          <span onDoubleClick={() => edit.setEditing(true)}>{post.title}</span>
+        )}
+        {post.is_vacant && <span className="ob-vacant">vacant</span>}
         <Caret items={items} tone="light" />
       </div>
     </div>
@@ -433,22 +480,46 @@ function ExecBox({
 // Overview: a single division column (whole-board tree)
 // ---------------------------------------------------------------------------
 
-function DivisionColumn({ division }: { division: DivisionOverview }) {
+// Org-board seniority: Div 1 (Establishment/Communications) and Div 5 (Qualifications)
+// hold a senior/correcting relationship to the line divisions, so their columns
+// are rendered RAISED (a fixed offset above the others), giving a staggered top
+// edge. Keyed by division identity, not color or board position.
+const RAISED_DIVISIONS = new Set([1, 5]);
+
+function DivisionColumn({
+  division,
+  execs,
+}: {
+  division: DivisionOverview;
+  execs: ExecPost[];
+}) {
   const { open } = useMenu();
   const nameEdit = useEditable('divisions', division.id, 'name', division.name);
   const run = useRowActions();
   const color = division.color ?? '#e5e7eb';
   const ink = textOn(color);
 
+  const assignItems: MenuItem[] = execs.map((e) => ({
+    label: `${division.head_exec_post_id === e.id ? '✓ ' : ''}${e.title}`,
+    onSelect: () => run(() => assignDivisionToExec(division.id, e.id)),
+  }));
+
   const items: MenuItem[] = [
     { label: 'Edit', onSelect: () => nameEdit.setEditing(true) },
     { label: 'Add Department', onSelect: () => run(() => addDepartment(division.id)) },
     { separator: true, label: '' },
+    { label: 'Assign to exec:', disabled: true },
+    ...(assignItems.length > 0
+      ? assignItems
+      : [{ label: 'No executives yet', disabled: true } as MenuItem]),
+    { separator: true, label: '' },
     { label: 'Remove', danger: true, onSelect: () => confirmRemove('division') && run(() => deleteRow('divisions', division.id)) },
   ];
 
+  const raised = RAISED_DIVISIONS.has(division.number);
+
   return (
-    <div className="ob-divcol">
+    <div className={`ob-divcol${raised ? ' ob-raised' : ''}`}>
       <div
         className="ob-divcol-head"
         style={{ background: color, color: ink }}
@@ -504,7 +575,10 @@ function DeptBox({
   ];
   return (
     <div className={`ob-deptbox${edit.pending ? ' pending' : ''}`} onContextMenu={(e) => open(e, items)}>
-      <span className="ob-deptbox-num">Dept {dept.number}</span>
+      <div className="ob-deptbox-head">
+        <span className="ob-deptbox-num">Dept {dept.number}</span>
+        <Caret items={items} />
+      </div>
       <span className="ob-deptbox-name">
         {edit.editing ? (
           <EditField state={edit} />
@@ -512,59 +586,17 @@ function DeptBox({
           <Link href={`/board/${divisionNumber}`}>{dept.name}</Link>
         )}
       </span>
-      <Caret items={items} />
     </div>
   );
 }
 
 // ---------------------------------------------------------------------------
-// Connector lines (pure presentation) for the executive tier
+// Connector lines (pure presentation) — used on the division-detail page.
+// The overview tree draws its own connectors purely in CSS (see .ob-tree).
 // ---------------------------------------------------------------------------
-
-// Column centers for a 7-column grid, in %.
-const C = BOARD_ORDER.map((_, i) => ((i + 0.5) / 7) * 100); // c[0..6]
-const COMM_MID = C[1]; // center of cols 1-3 (Div 7/1/2)
-const ORG_MID = (C[3] + C[6]) / 2; // center of cols 4-7 (Div 3/4/5/6)
 
 function VLine({ left, top, height }: { left: number; top: number; height: number }) {
   return <span className="cx-v" style={{ left: `${left}%`, top, height }} />;
-}
-function HLine({ left, right, top }: { left: number; right: number; top: number }) {
-  return <span className="cx-h" style={{ left: `${left}%`, right: `${right}%`, top }} />;
-}
-
-function ExecConnectors() {
-  return (
-    <>
-      {/* Chairman -> two Exec Secs */}
-      <div className="cx-zone" style={{ height: 40 }}>
-        <VLine left={50} top={0} height={14} />
-        <HLine left={COMM_MID} right={100 - ORG_MID} top={14} />
-        <VLine left={COMM_MID} top={14} height={26} />
-        <VLine left={ORG_MID} top={14} height={26} />
-      </div>
-    </>
-  );
-}
-
-function ColumnConnectors() {
-  return (
-    <div className="cx-zone" style={{ height: 26 }}>
-      {/* Comm Exec Sec down into Div 7/1/2 (cols 1-3) */}
-      <VLine left={COMM_MID} top={0} height={10} />
-      <HLine left={C[0]} right={100 - C[2]} top={10} />
-      <VLine left={C[0]} top={10} height={16} />
-      <VLine left={C[1]} top={10} height={16} />
-      <VLine left={C[2]} top={10} height={16} />
-      {/* Org Exec Sec down into Div 3/4/5/6 (cols 4-7) */}
-      <VLine left={ORG_MID} top={0} height={10} />
-      <HLine left={C[3]} right={100 - C[6]} top={10} />
-      <VLine left={C[3]} top={10} height={16} />
-      <VLine left={C[4]} top={10} height={16} />
-      <VLine left={C[5]} top={10} height={16} />
-      <VLine left={C[6]} top={10} height={16} />
-    </div>
-  );
 }
 
 // ---------------------------------------------------------------------------
@@ -572,35 +604,85 @@ function ColumnConnectors() {
 // ---------------------------------------------------------------------------
 
 export function OverviewBoard({ data }: { data: BoardOverview }) {
-  const { divisions, exec } = data;
-  const comm = exec.execSecs.find((s) => s.side === 'comm') ?? null;
-  const org = exec.execSecs.find((s) => s.side === 'org') ?? null;
+  const { divisions, chairman, execs } = data;
+
+  // Group divisions under the exec they report to, keeping board (sort) order.
+  const execIds = new Set(execs.map((e) => e.id));
+  const byExec = new Map<string, DivisionOverview[]>();
+  const unassigned: DivisionOverview[] = [];
+  for (const d of divisions) {
+    if (d.head_exec_post_id && execIds.has(d.head_exec_post_id)) {
+      const list = byExec.get(d.head_exec_post_id) ?? [];
+      list.push(d);
+      byExec.set(d.head_exec_post_id, list);
+    } else {
+      unassigned.push(d);
+    }
+  }
 
   return (
     <MenuProvider>
       <div className="ob-topbar">
         <h1>OT Committee Org Board</h1>
-        <span className="ob-hint">Right-click (or the ▾ caret) on any box to edit · click a division to open it</span>
+        <span className="ob-hint">
+          Right-click (or the ▾ caret) on any box to edit · Chairman ▸ “Add Executive” · a division ▸ “Assign to exec…”
+        </span>
       </div>
 
       <div className="ob-scroll">
         <div className="ob-board">
-          {/* Executive tier */}
-          <div className="ob-exec-top">
-            <ExecBox post={exec.chairman} role="Chairman" className="chairman" />
-          </div>
-          <ExecConnectors />
-          <div className="ob-exec-secs">
-            <ExecBox post={comm} role="Communications Exec Sec · Div 7/1/2" className="execsec" />
-            <ExecBox post={org} role="Organization Exec Sec · Div 3/4/5/6" className="execsec" />
-          </div>
-          <ColumnConnectors />
+          {/* Whole-board tree: Chairman → executives → their division groups.
+              Connectors are drawn in CSS so they always follow the assignment. */}
+          <div className="ob-tree">
+            <ul className="ob-tier">
+              <li>
+                <ChairmanBox post={chairman} />
+                <ul className="ob-tier ob-exectier">
+                  {execs.map((ex) => {
+                    const cols = byExec.get(ex.id) ?? [];
+                    return (
+                      <li key={ex.id}>
+                        <ExecBox post={ex} />
+                        <ul className="ob-tier ob-divtier">
+                          {cols.length === 0 ? (
+                            <li>
+                              <div className="ob-noassign">
+                                No divisions assigned
+                                <span className="ob-noassign-hint">
+                                  Use a division’s “Assign to exec” menu
+                                </span>
+                              </div>
+                            </li>
+                          ) : (
+                            cols.map((d) => (
+                              <li key={d.id}>
+                                <DivisionColumn division={d} execs={execs} />
+                              </li>
+                            ))
+                          )}
+                        </ul>
+                      </li>
+                    );
+                  })}
 
-          {/* Division columns */}
-          <div className="ob-columns">
-            {divisions.map((d) => (
-              <DivisionColumn key={d.id} division={d} />
-            ))}
+                  {unassigned.length > 0 && (
+                    <li>
+                      <div className="ob-exec ob-exec-orphan">
+                        <div className="ob-exec-role">Unassigned</div>
+                        <div className="ob-exec-title">No executive</div>
+                      </div>
+                      <ul className="ob-tier ob-divtier">
+                        {unassigned.map((d) => (
+                          <li key={d.id}>
+                            <DivisionColumn division={d} execs={execs} />
+                          </li>
+                        ))}
+                      </ul>
+                    </li>
+                  )}
+                </ul>
+              </li>
+            </ul>
           </div>
 
           {/* Board-wide VFP */}
@@ -646,7 +728,14 @@ export function DivisionDetail({
             <div className="ob-senior" style={{ borderColor: color }}>
               <div className="ob-exec-role">{seniorRole}</div>
               <div className="ob-senior-title">
-                {seniorExec ? seniorExec.title : <span className="ob-muted">(senior exec)</span>}
+                {seniorExec ? (
+                  <>
+                    {seniorExec.title}
+                    {seniorExec.is_vacant && <span className="ob-vacant">vacant</span>}
+                  </>
+                ) : (
+                  <span className="ob-muted">(unassigned)</span>
+                )}
               </div>
             </div>
             <div className="cx-zone" style={{ height: 18 }}>
@@ -689,4 +778,3 @@ function useEditableDivisionVfp(division: DivisionFull) {
 }
 
 export { MenuProvider };
-export type { ExecSecNode };

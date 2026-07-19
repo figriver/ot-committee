@@ -117,6 +117,53 @@ export async function addPost(
   revalidate();
 }
 
+/**
+ * Create a new executive post directly under the OT Committee Chairman.
+ * The new exec starts vacant and heads no divisions until one is assigned to it.
+ */
+export async function addExecutive(): Promise<void> {
+  const supa = getServiceClient();
+
+  const { data: chairRows, error: chErr } = await supa
+    .from('posts')
+    .select('id, department_id, senior_post_id')
+    .ilike('title', '%OT Committee Chairman%');
+  if (chErr) throw new Error(`addExecutive(chairman): ${chErr.message}`);
+  const chair =
+    (chairRows ?? []).find((r) => r.senior_post_id === null) ??
+    (chairRows ?? [])[0];
+  if (!chair) throw new Error('addExecutive: no OT Committee Chairman post found.');
+
+  const sort = await nextSortOrder('posts', {
+    department_id: chair.department_id,
+    section_id: null,
+  });
+  const { error } = await supa.from('posts').insert({
+    department_id: chair.department_id,
+    section_id: null,
+    title: 'New Executive',
+    is_vacant: true,
+    senior_post_id: chair.id,
+    sort_order: sort,
+  });
+  if (error) throw new Error(`addExecutive: ${error.message}`);
+  revalidate();
+}
+
+/** Point a division at the executive post it reports to (drives the board tree). */
+export async function assignDivisionToExec(
+  divisionId: string,
+  execPostId: string,
+): Promise<void> {
+  const supa = getServiceClient();
+  const { error } = await supa
+    .from('divisions')
+    .update({ head_exec_post_id: execPostId })
+    .eq('id', divisionId);
+  if (error) throw new Error(`assignDivisionToExec: ${error.message}`);
+  revalidate();
+}
+
 export async function addHolder(postId: string): Promise<void> {
   const supa = getServiceClient();
   const sort = await nextSortOrder('post_holders', { post_id: postId });

@@ -1,7 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getDivisionByNumber, getExecTier } from '@/lib/data';
-import { sideForDivision, EXEC_SIDES } from '@/lib/board-config';
 import { DivisionDetail } from '@/components/board-client';
 
 export const dynamic = 'force-dynamic';
@@ -38,12 +37,15 @@ export default async function DivisionPage({
   }
   if (!division) notFound();
 
-  // The senior exec box above this division = the Exec Sec whose side covers it.
-  const side = sideForDivision(divisionNumber);
-  const seniorExec = exec.execSecs.find((s) => s.side === side) ?? null;
-  const seniorRole = `${EXEC_SIDES[side].label} Executive Secretary`;
+  // The senior box above this division = the executive it is assigned to report to.
+  const seniorExec =
+    exec.execs.find((e) => e.id === division.head_exec_post_id) ?? null;
 
   return (
-    <DivisionDetail division={division} seniorExec={seniorExec} seniorRole={seniorRole} />
+    <DivisionDetail
+      division={division}
+      seniorExec={seniorExec}
+      seniorRole="Reports to"
+    />
   );
 }

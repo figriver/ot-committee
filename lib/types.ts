@@ -12,6 +12,7 @@ export type Division = {
   vfp: string | null;
   color: string | null;
   sort_order: number;
+  head_exec_post_id: string | null; // executive post this division reports to
 };
 
 export type Department = {
@@ -61,20 +62,17 @@ export type DivisionFull = Division & { departments: DepartmentFull[] };
 
 // ---- Overview (whole-board tree) -------------------------------------------
 
+/** An executive post: the Chairman, or any post reporting directly to it. */
 export type ExecPost = {
   id: string;
   title: string;
   is_vacant: boolean;
 };
 
-export type ExecSecNode = ExecPost & {
-  side: 'comm' | 'org';
-  divisions: number[]; // division numbers this Exec Sec is senior over
-};
-
+/** The Chairman plus every executive post beneath it (in board order). */
 export type ExecTier = {
   chairman: ExecPost | null;
-  execSecs: ExecSecNode[];
+  execs: ExecPost[];
 };
 
 export type DivisionOverview = Division & {
@@ -82,6 +80,7 @@ export type DivisionOverview = Division & {
 };
 
 export type BoardOverview = {
-  divisions: DivisionOverview[]; // already in board order
-  exec: ExecTier;
+  divisions: DivisionOverview[]; // already in board order; each carries head_exec_post_id
+  chairman: ExecPost | null;
+  execs: ExecPost[]; // executive posts under the Chairman, in board order
 };
