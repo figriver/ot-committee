@@ -2,7 +2,7 @@ import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
 // Everything under these paths requires a logged-in Supabase user.
-const PROTECTED = ['/board', '/members'];
+const PROTECTED = ['/board', '/members', '/report', '/stats'];
 
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({ request });

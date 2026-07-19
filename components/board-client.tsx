@@ -19,11 +19,13 @@ import {
   addPost,
   addHolder,
   assignDivisionToExec,
+  assignHolderToMember,
   deleteRow,
   moveRow,
   updateField,
 } from '@/app/board/actions';
 import { textOn } from '@/lib/color';
+import type { MemberLite } from '@/lib/data';
 import type {
   BoardOverview,
   BoardMeta,
@@ -54,6 +56,10 @@ type MenuCtx = {
 
 const MenuContext = createContext<MenuCtx>({ open: () => {} });
 const useMenu = () => useContext(MenuContext);
+
+// Members list for the "Link to member" holder action (division-detail only).
+const MembersContext = createContext<MemberLite[]>([]);
+const useMembers = () => useContext(MembersContext);
 
 function MenuProvider({ children }: { children: ReactNode }) {
   // `anchor` is where the user clicked; the menu is measured after render and
@@ -282,10 +288,26 @@ function PostRow({ post }: { post: PostWithHolders }) {
 
 function HolderRow({ holder }: { holder: Holder }) {
   const { open } = useMenu();
+  const members = useMembers();
   const edit = useEditable('post_holders', holder.id, 'holder_name', holder.holder_name);
   const run = useRowActions();
+
+  const memberItems: MenuItem[] = members.map((m) => ({
+    label: `${holder.member_id === m.id ? '✓ ' : ''}${m.email}`,
+    onSelect: () => run(() => assignHolderToMember(holder.id, m.id)),
+  }));
+
   const items: MenuItem[] = [
     { label: 'Edit name', onSelect: () => edit.setEditing(true) },
+    { separator: true, label: '' },
+    { label: 'Link to member:', disabled: true },
+    ...(memberItems.length > 0
+      ? memberItems
+      : [{ label: 'No members yet', disabled: true } as MenuItem]),
+    ...(holder.member_id
+      ? [{ label: 'Unlink member', onSelect: () => run(() => assignHolderToMember(holder.id, null)) }]
+      : []),
+    { separator: true, label: '' },
     { label: 'Move up', onSelect: () => run(() => moveRow('post_holders', holder.id, 'up')) },
     { label: 'Move down', onSelect: () => run(() => moveRow('post_holders', holder.id, 'down')) },
     { separator: true, label: '' },
@@ -298,6 +320,7 @@ function HolderRow({ holder }: { holder: Holder }) {
       ) : (
         <span onDoubleClick={() => edit.setEditing(true)}>
           {holder.holder_name || <span className="ob-muted">unnamed</span>}
+          {holder.member_id && <span className="ob-linked" title="Linked to a member">● member</span>}
         </span>
       )}
       <Caret items={items} />
@@ -867,16 +890,19 @@ export function DivisionDetail({
   division,
   seniorExec,
   seniorRole,
+  members = [],
 }: {
   division: DivisionFull;
   seniorExec: ExecPost | null;
   seniorRole: string;
+  members?: MemberLite[];
 }) {
   const color = division.color ?? '#e5e7eb';
   const ink = textOn(color);
   const vfpEdit = useEditableDivisionVfp(division);
 
   return (
+    <MembersContext.Provider value={members}>
     <MenuProvider>
       <div className="ob-topbar">
         <Link href="/board" className="ob-back">
@@ -936,6 +962,7 @@ export function DivisionDetail({
         </div>
       </div>
     </MenuProvider>
+    </MembersContext.Provider>
   );
 }
 

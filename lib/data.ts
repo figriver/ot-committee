@@ -15,6 +15,19 @@ import type {
   BoardOverview,
 } from '@/lib/types';
 
+export type MemberLite = { id: string; email: string; role: string };
+
+/** Lightweight member list for pickers (assigning holders, etc.). */
+export async function getMembersLite(): Promise<MemberLite[]> {
+  const supa = getServiceClient();
+  const { data, error } = await supa
+    .from('members')
+    .select('id, email, role')
+    .order('email', { ascending: true });
+  if (error) throw new Error(`getMembersLite: ${error.message}`);
+  return (data ?? []) as MemberLite[];
+}
+
 /** The single board-level settings row (overall VFP). Null if not seeded yet. */
 export async function getBoardMeta(): Promise<BoardMeta | null> {
   const supa = getServiceClient();

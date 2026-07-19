@@ -1484,3 +1484,293 @@ a {
     margin-bottom: 4px;
   }
 }
+
+/* ==========================================================================
+   Stats slice (2a) — /stats admin + /report member form
+   ========================================================================== */
+
+/* linked-to-member badge on a holder row */
+.ob-linked {
+  margin-left: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: #2563eb;
+}
+
+/* ---- shared page shell ---- */
+.stx-wrap,
+.rpt-wrap {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 24px 20px 64px;
+}
+.stx-head,
+.rpt-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.stx-head h1,
+.rpt-head h1 {
+  font-size: 22px;
+  margin: 0;
+}
+.stx-back,
+.rpt-back {
+  color: var(--accent);
+  font-size: 13px;
+}
+.stx-intro {
+  color: var(--muted);
+  font-size: 13px;
+  margin: 6px 0 18px;
+}
+.stx-ok,
+.rpt-ok {
+  margin-bottom: 14px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  color: #065f46;
+  font-size: 13px;
+}
+.stx-err {
+  margin-bottom: 14px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: var(--danger);
+  font-size: 13px;
+}
+
+/* ---- /stats create form ---- */
+.stx-form {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 26px;
+}
+.stx-label,
+.rpt-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-top: 6px;
+}
+.stx-select,
+.stx-input {
+  font: inherit;
+  color: #111827;
+  background: #fff;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  outline: none;
+}
+.stx-input::placeholder {
+  color: #6b7280;
+  opacity: 1;
+}
+.stx-select:focus,
+.stx-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+.stx-btn,
+.rpt-btn {
+  font: inherit;
+  font-weight: 600;
+  margin-top: 12px;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 8px;
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+  align-self: flex-start;
+}
+.stx-btn:hover,
+.rpt-btn:hover {
+  background: #1d4ed8;
+}
+.stx-subhead {
+  font-size: 15px;
+  margin: 0 0 10px;
+}
+.stx-empty,
+.rpt-empty {
+  color: var(--muted);
+  font-size: 13px;
+}
+.stx-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.stx-list-item {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: var(--panel);
+}
+.stx-list-post {
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+.stx-list-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.stx-chip {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #1e3a8a;
+  background: #eff4ff;
+  border: 1px solid #c7d7fb;
+  border-radius: 999px;
+  padding: 2px 10px;
+}
+
+/* ---- /report week nav + form ---- */
+.rpt-weeknav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 14px 0 16px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 8px 12px;
+}
+.rpt-weekbtn {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent);
+  padding: 4px 8px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+.rpt-weekbtn:hover {
+  background: #eff4ff;
+}
+.rpt-weeklabel {
+  font-size: 13.5px;
+  color: var(--ink);
+  text-align: center;
+}
+.rpt-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.rpt-section {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.rpt-hint {
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--muted);
+}
+.rpt-input {
+  font: inherit;
+  color: #111827;
+  background: #fff;
+  padding: 10px 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  outline: none;
+  max-width: 220px;
+}
+.rpt-input::placeholder {
+  color: #6b7280;
+  opacity: 1;
+}
+.rpt-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+.rpt-post {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 8px;
+  margin-bottom: 4px;
+}
+.rpt-post-dept {
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+}
+.rpt-post-title {
+  font-weight: 700;
+  font-size: 14.5px;
+}
+.rpt-stat {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.rpt-stat-label {
+  font-weight: 600;
+  font-size: 14px;
+}
+.rpt-inline-link {
+  color: var(--accent);
+  font-weight: 600;
+}
+.rpt-btn {
+  align-self: flex-start;
+  margin-top: 0;
+}
+
+@media (max-width: 639px) {
+  .stx-wrap,
+  .rpt-wrap {
+    padding: 18px 14px 48px;
+  }
+  .stx-btn,
+  .rpt-btn {
+    width: 100%;
+    align-self: stretch;
+    text-align: center;
+  }
+  .rpt-input {
+    max-width: none;
+    width: 100%;
+  }
+  .rpt-stat {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 5px;
+  }
+  .rpt-weeklabel {
+    font-size: 12.5px;
+  }
+}

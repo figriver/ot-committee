@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { getDivisionByNumber, getExecTier } from '@/lib/data';
+import { getDivisionByNumber, getExecTier, getMembersLite } from '@/lib/data';
 import { DivisionDetail } from '@/components/board-client';
 
 export const dynamic = 'force-dynamic';
@@ -16,10 +16,12 @@ export default async function DivisionPage({
 
   let division;
   let exec;
+  let members;
   try {
-    [division, exec] = await Promise.all([
+    [division, exec, members] = await Promise.all([
       getDivisionByNumber(divisionNumber),
       getExecTier(),
+      getMembersLite(),
     ]);
   } catch (e) {
     return (
@@ -46,6 +48,7 @@ export default async function DivisionPage({
       division={division}
       seniorExec={seniorExec}
       seniorRole="Reports to"
+      members={members}
     />
   );
 }

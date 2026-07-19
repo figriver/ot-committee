@@ -24,6 +24,14 @@ export function AccountBar({
         </span>
       )}
       <span className="acct-spacer" />
+      <Link href="/report" className="acct-link">
+        Report
+      </Link>
+      {isAdmin && (
+        <Link href="/stats" className="acct-link">
+          Stats
+        </Link>
+      )}
       {isAdmin && (
         <Link href="/members" className="acct-link">
           Members

@@ -165,6 +165,33 @@ export async function assignDivisionToExec(
   revalidate();
 }
 
+/**
+ * Link a post holder to a member (or clear the link). Sets post_holders.member_id
+ * so the member "holds" the post for stat reporting; when linked, the display
+ * name is set to the member's email.
+ */
+export async function assignHolderToMember(
+  holderId: string,
+  memberId: string | null,
+): Promise<void> {
+  const supa = getServiceClient();
+  const update: Record<string, string | null> = { member_id: memberId };
+  if (memberId) {
+    const { data: m } = await supa
+      .from('members')
+      .select('email')
+      .eq('id', memberId)
+      .maybeSingle();
+    update.holder_name = (m?.email as string) ?? 'member';
+  }
+  const { error } = await supa
+    .from('post_holders')
+    .update(update)
+    .eq('id', holderId);
+  if (error) throw new Error(`assignHolderToMember: ${error.message}`);
+  revalidate();
+}
+
 export async function addHolder(postId: string): Promise<void> {
   const supa = getServiceClient();
   const sort = await nextSortOrder('post_holders', { post_id: postId });
