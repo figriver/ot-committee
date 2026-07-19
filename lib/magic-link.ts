@@ -33,7 +33,7 @@ export async function sendMagicLink(email: string): Promise<void> {
   );
   const { error } = await anon.auth.signInWithOtp({
     email,
-    options: { shouldCreateUser: false, emailRedirectTo: `${SITE}/auth/callback` },
+    options: { shouldCreateUser: false, emailRedirectTo: `${SITE}/auth/confirm` },
   });
   if (error) throw new Error(`sendMagicLink(otp): ${error.message}`);
 }
