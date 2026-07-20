@@ -206,6 +206,44 @@ export async function addHolder(postId: string): Promise<void> {
   revalidate();
 }
 
+/**
+ * Set a post's holder from a single inline field (used by the head boxes). An
+ * empty value clears the holder → the post reads HFA. Otherwise it upserts the
+ * post's primary holder (updates the first holder, or creates one).
+ */
+export async function setPostHolder(
+  postId: string,
+  name: string,
+): Promise<void> {
+  const supa = getServiceClient();
+  const trimmed = name.trim();
+
+  const { data: existing } = await supa
+    .from('post_holders')
+    .select('id')
+    .eq('post_id', postId)
+    .order('sort_order', { ascending: true });
+
+  if (trimmed === '') {
+    if (existing && existing.length > 0) {
+      await supa.from('post_holders').delete().eq('post_id', postId);
+    }
+    await supa.from('posts').update({ is_vacant: true }).eq('id', postId);
+  } else if (existing && existing.length > 0) {
+    await supa
+      .from('post_holders')
+      .update({ holder_name: trimmed })
+      .eq('id', existing[0].id);
+    await supa.from('posts').update({ is_vacant: false }).eq('id', postId);
+  } else {
+    await supa
+      .from('post_holders')
+      .insert({ post_id: postId, holder_name: trimmed, sort_order: 1 });
+    await supa.from('posts').update({ is_vacant: false }).eq('id', postId);
+  }
+  revalidate();
+}
+
 // ---------------------------------------------------------------------------
 // Delete
 // ---------------------------------------------------------------------------

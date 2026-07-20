@@ -33,7 +33,7 @@ async function getPostLabels(): Promise<Map<string, PostLabel>> {
   const [divRes, deptRes, postRes] = await Promise.all([
     supa.from('divisions').select('id, number, sort_order'),
     supa.from('departments').select('id, division_id, name, sort_order'),
-    supa.from('posts').select('id, department_id, title, sort_order'),
+    supa.from('posts').select('id, department_id, division_id, title, sort_order'),
   ]);
   const divs = divRes.data ?? [];
   const depts = deptRes.data ?? [];
@@ -43,7 +43,17 @@ async function getPostLabels(): Promise<Map<string, PostLabel>> {
 
   const out = new Map<string, PostLabel>();
   for (const p of posts) {
-    const dept = deptById.get(p.department_id);
+    // Division-level head posts (Secretaries) have no department; label by division.
+    if (p.division_id) {
+      const div = divById.get(p.division_id);
+      out.set(p.id, {
+        id: p.id,
+        label: `Div ${div?.number ?? '?'} · (division head) — ${p.title}`,
+        sortKey: (div?.sort_order ?? 0) * 1_000_000 - 1, // just before its departments
+      });
+      continue;
+    }
+    const dept = p.department_id ? deptById.get(p.department_id) : undefined;
     const div = dept ? divById.get(dept.division_id) : undefined;
     const label = `Div ${div?.number ?? '?'} · ${dept?.name ?? '—'} — ${p.title}`;
     const sortKey =

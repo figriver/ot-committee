@@ -23,6 +23,7 @@ export type Department = {
   name: string;
   vfp: string | null;
   sort_order: number;
+  head_post_id: string | null; // the department's designated head (its Director)
 };
 
 export type Section = {
@@ -35,7 +36,8 @@ export type Section = {
 
 export type Post = {
   id: string;
-  department_id: string;
+  department_id: string | null; // null for a division-level (division head) post
+  division_id: string | null; // set when this post heads a division (its Secretary)
   section_id: string | null;
   title: string;
   purpose: string | null;
@@ -69,8 +71,12 @@ export type SectionWithPosts = Section & { posts: PostWithHolders[] };
 export type DepartmentFull = Department & {
   sections: SectionWithPosts[];
   posts: PostWithHolders[]; // posts hanging directly off the department (no section)
+  headPost: PostWithHolders | null; // the department's head (Director)
 };
-export type DivisionFull = Division & { departments: DepartmentFull[] };
+export type DivisionFull = Division & {
+  departments: DepartmentFull[];
+  headPost: PostWithHolders | null; // the division's head (Secretary)
+};
 
 // ---- Overview (whole-board tree) -------------------------------------------
 

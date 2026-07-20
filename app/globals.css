@@ -1992,3 +1992,89 @@ a {
     grid-template-columns: 1fr;
   }
 }
+
+/* ==========================================================================
+   Head-post boxes — division Secretary + department Director (editable)
+   ========================================================================== */
+.ob-headbox {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.ob-headbox.pending {
+  opacity: 0.55;
+}
+/* Division head: a light strip directly under the colored division header. */
+.ob-headbox.division {
+  padding: 7px 10px;
+  background: #eef1f5;
+  border-bottom: 1px solid var(--line);
+}
+/* Department head: nested inside the department box, under its name. */
+.ob-headbox.department {
+  margin-top: 4px;
+  padding-top: 5px;
+  border-top: 1px dashed var(--line-strong);
+}
+.ob-headbox-role {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  font-weight: 700;
+  margin-right: 6px;
+}
+.ob-headbox-title {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: 700;
+  color: #111827;
+}
+.ob-headbox.division .ob-headbox-title {
+  font-size: 12.5px;
+}
+.ob-headbox.department .ob-headbox-title {
+  font-size: 11.5px;
+}
+.ob-headbox-title > span:first-child {
+  flex: 1 1 auto;
+  line-height: 1.2;
+}
+.ob-headbox-holder {
+  font-size: 12px;
+  color: #374151;
+}
+.ob-headbox.department .ob-headbox-holder {
+  font-size: 11.5px;
+}
+.ob-headbox-holder-val {
+  cursor: text;
+  border-radius: 3px;
+  padding: 0 2px;
+  margin: 0 -2px;
+}
+.ob-headbox-holder-val:hover {
+  background: #e5e9f0;
+}
+
+/* Mobile: division head (Secretary) line inside the drawer */
+@media (max-width: 639px) {
+  .mb-head {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 8px 10px;
+  }
+  .mb-head-title {
+    font-weight: 700;
+    font-size: 13px;
+  }
+  .mb-head-holder {
+    font-size: 12px;
+    color: var(--muted);
+  }
+}

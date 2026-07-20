@@ -20,6 +20,7 @@ import {
   addHolder,
   assignDivisionToExec,
   assignHolderToMember,
+  setPostHolder,
   deleteRow,
   moveRow,
   updateField,
@@ -185,6 +186,30 @@ function useEditable(kind: EntityKind, id: string, field: string, value: string 
 
 type EditState = ReturnType<typeof useEditable>;
 
+/** Like useEditable, but commits through a custom async function (e.g. a holder
+ *  upsert) instead of the generic updateField. Same shape, so EditField works. */
+function useInlineText(value: string | null, onCommit: (v: string) => Promise<void>) {
+  const [editing, setEditing] = useState(false);
+  const [val, setVal] = useState(value ?? '');
+  const [pending, start] = useTransition();
+  useEffect(() => setVal(value ?? ''), [value]);
+  const commit = () => {
+    if ((val ?? '') === (value ?? '')) {
+      setEditing(false);
+      return;
+    }
+    start(async () => {
+      await onCommit(val);
+      setEditing(false);
+    });
+  };
+  const cancel = () => {
+    setVal(value ?? '');
+    setEditing(false);
+  };
+  return { editing, setEditing, val, setVal, pending, commit, cancel };
+}
+
 function EditField({
   state,
   multiline,
@@ -249,10 +274,10 @@ function PostRow({ post }: { post: PostWithHolders }) {
 
   const items: MenuItem[] = [
     { label: 'Edit title', onSelect: () => edit.setEditing(true) },
-    { label: 'Add Position', onSelect: () => run(() => addPost(post.department_id, post.section_id)) },
+    { label: 'Add Position', onSelect: () => run(() => addPost(post.department_id!, post.section_id)) },
     { label: 'Add Holder', onSelect: () => run(() => addHolder(post.id)) },
     {
-      label: post.is_vacant ? 'Mark Filled' : 'Mark Vacant',
+      label: post.is_vacant ? 'Mark Filled' : 'Mark HFA',
       onSelect: () => run(() => updateField('posts', post.id, 'is_vacant', !post.is_vacant)),
     },
     { separator: true, label: '' },
@@ -272,7 +297,7 @@ function PostRow({ post }: { post: PostWithHolders }) {
             {post.title}
           </span>
         )}
-        {post.is_vacant && <span className="ob-vacant">vacant</span>}
+        {post.is_vacant && <span className="ob-vacant">HFA</span>}
         <Caret items={items} />
       </div>
       {post.holders.length > 0 && (
@@ -443,7 +468,7 @@ function ChairmanBox({ post }: { post: ExecPost | null }) {
     { label: 'Edit', onSelect: () => edit.setEditing(true) },
     { label: 'Add Executive', onSelect: () => run(() => addExecutive()) },
     {
-      label: post.is_vacant ? 'Mark Filled' : 'Mark Vacant',
+      label: post.is_vacant ? 'Mark Filled' : 'Mark HFA',
       onSelect: () => run(() => updateField('posts', post.id, 'is_vacant', !post.is_vacant)),
     },
   ];
@@ -480,22 +505,77 @@ function HolderLine({
       {name ? (
         <span className="ob-holderline-name">{name}</span>
       ) : (
-        <span className="ob-vacant">vacant</span>
+        <span className="ob-vacant">HFA</span>
       )}
     </div>
   );
 }
 
-/** First (senior) post of a department — its Director / head. */
-function deptHeadPost(dept: DepartmentFull): PostWithHolders | undefined {
-  if (dept.posts.length) return dept.posts[0];
-  for (const s of dept.sections) if (s.posts.length) return s.posts[0];
-  return undefined;
+/** Holder name of a post's first named holder, or null (= vacant → HFA). */
+function holderNameOf(post: PostWithHolders | undefined | null): string | null {
+  return post?.holders.find((h) => h.holder_name)?.holder_name ?? null;
 }
 
-/** Holder name of a post's first named holder, or null (= vacant). */
-function holderNameOf(post: PostWithHolders | undefined): string | null {
-  return post?.holders.find((h) => h.holder_name)?.holder_name ?? null;
+/**
+ * The head-post box for a division (its Secretary) or a department (its Director).
+ * Shows the head post's title and its holder — a name, or HFA when unfilled — the
+ * same way exec boxes show their holder. Both the title and the holder are
+ * editable in place (double-click); the holder saves via setPostHolder.
+ */
+function HeadBox({ post, kind }: { post: PostWithHolders | null; kind: 'division' | 'department' }) {
+  const { open } = useMenu();
+  const titleEdit = useEditable('posts', post?.id ?? '', 'title', post?.title ?? null);
+  const holderName = holderNameOf(post);
+  const holderEdit = useInlineText(holderName, async (v) => {
+    if (post) await setPostHolder(post.id, v);
+  });
+  const run = useRowActions();
+
+  if (!post) {
+    return (
+      <div className={`ob-headbox ${kind}`}>
+        <span className="ob-headbox-role">{kind === 'division' ? 'Secretary' : 'Director'}</span>
+        <span className="ob-vacant">HFA</span>
+      </div>
+    );
+  }
+
+  const items: MenuItem[] = [
+    { label: 'Edit title', onSelect: () => titleEdit.setEditing(true) },
+    { label: holderName ? 'Edit holder' : 'Set holder', onSelect: () => holderEdit.setEditing(true) },
+    ...(holderName
+      ? [{ label: 'Mark HFA', onSelect: () => run(() => setPostHolder(post.id, '')) }]
+      : []),
+  ];
+
+  return (
+    <div
+      className={`ob-headbox ${kind}${titleEdit.pending || holderEdit.pending ? ' pending' : ''}`}
+      onContextMenu={(e) => open(e, items)}
+    >
+      <div className="ob-headbox-title">
+        {titleEdit.editing ? (
+          <EditField state={titleEdit} />
+        ) : (
+          <span onDoubleClick={() => titleEdit.setEditing(true)}>{post.title}</span>
+        )}
+        <Caret items={items} />
+      </div>
+      <div className="ob-headbox-holder">
+        {holderEdit.editing ? (
+          <EditField state={holderEdit} placeholder="holder name" />
+        ) : (
+          <span
+            className="ob-headbox-holder-val"
+            title="Double-click to edit the holder"
+            onDoubleClick={() => holderEdit.setEditing(true)}
+          >
+            {holderName ?? <span className="ob-vacant">HFA</span>}
+          </span>
+        )}
+      </div>
+    </div>
+  );
 }
 
 /** One executive post under the Chairman; heads the division group beneath it. */
@@ -506,7 +586,7 @@ function ExecBox({ post }: { post: ExecPost }) {
   const items: MenuItem[] = [
     { label: 'Edit', onSelect: () => edit.setEditing(true) },
     {
-      label: post.is_vacant ? 'Mark Filled' : 'Mark Vacant',
+      label: post.is_vacant ? 'Mark Filled' : 'Mark HFA',
       onSelect: () => run(() => updateField('posts', post.id, 'is_vacant', !post.is_vacant)),
     },
     { separator: true, label: '' },
@@ -575,10 +655,6 @@ function DivisionColumn({
   ];
 
   const raised = RAISED_DIVISIONS.has(division.number);
-  // The division's senior officer = the head post of its first department.
-  const headHolder = holderNameOf(
-    division.departments[0] ? deptHeadPost(division.departments[0]) : undefined,
-  );
 
   return (
     <div className={`ob-divcol${raised ? ' ob-raised' : ''}`}>
@@ -602,14 +678,10 @@ function DivisionColumn({
           </Link>
           <Caret items={items} tone={ink === '#ffffff' ? 'light' : 'dark'} />
         </div>
-        <div className="ob-divcol-head-holder">
-          {headHolder ? (
-            <span style={{ color: ink }}>{headHolder}</span>
-          ) : (
-            <span className="ob-vacant">vacant</span>
-          )}
-        </div>
       </div>
+
+      {/* The division's head post (its Secretary) — editable, holder-or-HFA. */}
+      <HeadBox post={division.headPost} kind="division" />
 
       <div className="ob-divcol-depts">
         {division.departments.map((dept) => (
@@ -644,7 +716,6 @@ function DeptBox({
     { separator: true, label: '' },
     { label: 'Remove', danger: true, onSelect: () => confirmRemove('department') && run(() => deleteRow('departments', dept.id)) },
   ];
-  const headHolder = holderNameOf(deptHeadPost(dept));
 
   return (
     <div className={`ob-deptbox${edit.pending ? ' pending' : ''}`} onContextMenu={(e) => open(e, items)}>
@@ -659,7 +730,8 @@ function DeptBox({
           <Link href={`/board/${divisionNumber}`}>{dept.name}</Link>
         )}
       </span>
-      <HolderLine name={headHolder} tone="light" />
+      {/* The department's head post (its Director) — editable, holder-or-HFA. */}
+      <HeadBox post={dept.headPost} kind="department" />
     </div>
   );
 }
@@ -818,7 +890,7 @@ function MobileBoard({
           <span className="mb-exec-label">Chairman</span>
           <span className="mb-exec-val">
             {chairman ? chairman.title : '—'}
-            {chairman?.is_vacant && <span className="ob-vacant">vacant</span>}
+            {chairman?.is_vacant && <span className="ob-vacant">HFA</span>}
           </span>
         </div>
         <div className="mb-exec-row">
@@ -886,6 +958,14 @@ function MobileDivision({
               Reports to <strong>{exec.title}</strong>
             </div>
           )}
+          {division.headPost && (
+            <div className="mb-head">
+              <span className="mb-head-title">{division.headPost.title}</span>
+              <span className="mb-head-holder">
+                {holderNameOf(division.headPost) ?? <span className="ob-vacant">HFA</span>}
+              </span>
+            </div>
+          )}
           {division.vfp && (
             <div className="mb-vfp">
               <span className="mb-vfp-key">VFP</span> {division.vfp}
@@ -929,7 +1009,7 @@ function MobilePost({ post }: { post: PostWithHolders }) {
   return (
     <div className="mb-post">
       <span className="mb-post-title">{post.title}</span>
-      {post.is_vacant && <span className="ob-vacant">vacant</span>}
+      {post.is_vacant && <span className="ob-vacant">HFA</span>}
       {names.length > 0 && (
         <span className="mb-post-holders">{names.join(', ')}</span>
       )}
@@ -975,7 +1055,7 @@ export function DivisionDetail({
                 {seniorExec ? (
                   <>
                     {seniorExec.title}
-                    {seniorExec.is_vacant && <span className="ob-vacant">vacant</span>}
+                    {seniorExec.is_vacant && <span className="ob-vacant">HFA</span>}
                   </>
                 ) : (
                   <span className="ob-muted">(unassigned)</span>

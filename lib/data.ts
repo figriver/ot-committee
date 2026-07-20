@@ -166,6 +166,11 @@ export async function getBoardOverview(): Promise<BoardOverview> {
     holders: holdersByPost.get(p.id) ?? [],
   }));
 
+  const postById = new Map(postsWithHolders.map((p) => [p.id, p]));
+  // Division-head posts live at the division level (division_id set, no department).
+  const divHeadByDivision = new Map<string, PostWithHolders>();
+  for (const p of postsWithHolders) if (p.division_id) divHeadByDivision.set(p.division_id, p);
+
   const divisionsFull: DivisionFull[] = divisions.map((d) => {
     const deptRows = departments.filter((dept) => dept.division_id === d.id);
     const departmentsFull: DepartmentFull[] = deptRows.map((dept) => {
@@ -178,9 +183,17 @@ export async function getBoardOverview(): Promise<BoardOverview> {
       const deptDirectPosts = postsWithHolders.filter(
         (p) => p.department_id === dept.id && p.section_id === null,
       );
-      return { ...dept, sections: deptSections, posts: deptDirectPosts };
+      const headPost =
+        (dept.head_post_id ? postById.get(dept.head_post_id) : undefined) ??
+        deptDirectPosts[0] ??
+        null;
+      return { ...dept, sections: deptSections, posts: deptDirectPosts, headPost };
     });
-    return { ...d, departments: departmentsFull };
+    return {
+      ...d,
+      departments: departmentsFull,
+      headPost: divHeadByDivision.get(d.id) ?? null,
+    };
   });
 
   return {
@@ -221,6 +234,12 @@ export async function getDivisionByNumber(
 
   let sections: Section[] = [];
   let posts: Post[] = [];
+  // The division-level head post (its Secretary) lives outside any department.
+  const { data: divHeadRows } = await supa
+    .from('posts')
+    .select('*')
+    .eq('division_id', division.id);
+  const divHeadPosts = (divHeadRows ?? []) as Post[];
   if (deptIds.length > 0) {
     const [{ data: secRows, error: secErr }, { data: postRows, error: postErr }] =
       await Promise.all([
@@ -240,6 +259,7 @@ export async function getDivisionByNumber(
     sections = (secRows ?? []) as Section[];
     posts = (postRows ?? []) as Post[];
   }
+  posts = [...posts, ...divHeadPosts];
 
   const postIds = posts.map((p) => p.id);
   let holders: Holder[] = [];
@@ -265,6 +285,7 @@ export async function getDivisionByNumber(
     holders: holdersByPost.get(p.id) ?? [],
   }));
 
+  const postById = new Map(postsWithHolders.map((p) => [p.id, p]));
   const departmentsFull: DepartmentFull[] = departments.map((dept) => {
     const deptSections = sections
       .filter((s) => s.department_id === dept.id)
@@ -275,8 +296,14 @@ export async function getDivisionByNumber(
     const deptDirectPosts = postsWithHolders.filter(
       (p) => p.department_id === dept.id && p.section_id === null,
     );
-    return { ...dept, sections: deptSections, posts: deptDirectPosts };
+    const headPost =
+      (dept.head_post_id ? postById.get(dept.head_post_id) : undefined) ??
+      deptDirectPosts[0] ??
+      null;
+    return { ...dept, sections: deptSections, posts: deptDirectPosts, headPost };
   });
 
-  return { ...division, departments: departmentsFull };
+  const headPost =
+    postsWithHolders.find((p) => p.division_id === division.id) ?? null;
+  return { ...division, departments: departmentsFull, headPost };
 }
