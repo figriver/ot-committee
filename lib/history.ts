@@ -1,6 +1,7 @@
 import 'server-only';
 import { getServiceClient } from '@/lib/supabase/server';
 import { currentWeekEnding, addDaysISO } from '@/lib/week';
+import { loadHierarchy } from '@/lib/hierarchy';
 import type { Member } from '@/lib/types';
 
 // The history view: for one subject (a named stat, or a member's hours), the
@@ -78,6 +79,9 @@ export async function canEditSubject(
   if (member.role === 'admin') return true;
   if (subjectType === 'hours') return subjectId === member.id;
 
+  // Correcting a stat follows RESPONSIBILITY, not the direct holder row: whoever
+  // covers the post (their own, or an unfilled one rolling up to them) is the
+  // one who can correct it. Same resolver as the report view and the dashboard.
   const supa = getServiceClient();
   const { data: stat } = await supa
     .from('stats')
@@ -85,13 +89,8 @@ export async function canEditSubject(
     .eq('id', subjectId)
     .maybeSingle();
   if (!stat) return false;
-  const { data: holder } = await supa
-    .from('post_holders')
-    .select('id')
-    .eq('post_id', stat.post_id)
-    .eq('member_id', member.id)
-    .maybeSingle();
-  return !!holder;
+  const h = await loadHierarchy();
+  return h.effectiveHolderOf(stat.post_id) === member.id;
 }
 
 /** Notes on a subject, newest date first. */

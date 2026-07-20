@@ -1,7 +1,6 @@
 import 'server-only';
-import { getServiceClient } from '@/lib/supabase/server';
-import { getPostsForPicker } from '@/lib/stats';
-import { getSeries, type Scale, type SeriesView } from '@/lib/series';
+import { loadHierarchy, type Hierarchy } from '@/lib/hierarchy';
+import { getSeries, getStatSeriesBatch, type Scale, type SeriesView } from '@/lib/series';
 import type { SubjectType } from '@/lib/history';
 import type { Member } from '@/lib/types';
 
@@ -29,13 +28,15 @@ export type DashboardCard = {
   subtitle: string | null;
   unit: string;
   historyHref: string;
+  branch: string; // which branch it reaches you through — the dashboard groups by this
   series: SeriesView;
 };
 
 export type DashboardView = {
   cards: DashboardCard[];
-  postCount: number; // posts the member holds
-  statCount: number; // named stats across those posts
+  postCount: number; // posts the member holds directly
+  statCount: number; // stats they are the effective holder of
+  coveredCount: number; // of those, how many come from unfilled posts they cover
 };
 
 /**
@@ -47,42 +48,19 @@ export async function getMyDashboard(
   member: Member,
   scale: Scale,
 ): Promise<DashboardView> {
-  const supa = getServiceClient();
+  // EFFECTIVE holder, not direct holder: the dashboard shows what this member is
+  // accountable for — their own posts plus every unfilled branch rolling up to
+  // them. Same resolver as the report view and chase-up, so the three surfaces
+  // can never disagree about who owes what.
+  const h = await loadHierarchy();
+  const mine = h.statsFor(member.id);
+  const heldPosts = new Set(h.postsHeldBy(member.id));
 
-  const { data: holders } = await supa
-    .from('post_holders')
-    .select('post_id')
-    .eq('member_id', member.id);
-  const postIds = [...new Set((holders ?? []).map((h) => h.post_id))];
-
-  // Only ACTIVE stats: a retired stat keeps its history (reachable from the
-  // history page) but stops occupying a card on the dashboard.
-  const stats = postIds.length
-    ? (
-        await supa
-          .from('stats')
-          .select('id, name, post_id')
-          .in('post_id', postIds)
-          .eq('active', true)
-          .order('created_at', { ascending: true })
-      ).data ?? []
-    : [];
-
-  const labels = new Map((await getPostsForPicker()).map((p) => [p.id, p]));
-
-  // Board order (division → department → post), then creation order within a post.
-  const ordered = stats
-    .map((s, i) => ({ ...s, _sort: (labels.get(s.post_id)?.sortKey ?? 0) * 1000 + i }))
-    .sort((a, b) => a._sort - b._sort);
-
-  // The member can always correct their own hours; canSetRollup is a stat-only
-  // concern and getSeries already gates it on subjectType.
   const hoursSeries = await getSeries('hours', member.id, scale, true);
-
-  // Each stat's series is independent — fetch them together rather than in
-  // series, so N stats cost one round of queries, not N sequential ones.
-  const statSeries = await Promise.all(
-    ordered.map((s) => getSeries('stat', s.id, scale, true)),
+  const statSeries = await getStatSeriesBatch(
+    mine.map((s) => s.id),
+    scale,
+    true,
   );
 
   const cards: DashboardCard[] = [
@@ -94,19 +72,61 @@ export async function getMyDashboard(
       subtitle: 'Your weekly hours on post',
       unit: 'Hours',
       historyHref: `/stats/history/hours/${member.id}`,
+      branch: 'You',
       series: hoursSeries,
     },
-    ...ordered.map((s, i) => ({
-      key: s.id,
-      subjectType: 'stat' as SubjectType,
-      subjectId: s.id,
-      title: s.name,
-      subtitle: labels.get(s.post_id)?.label ?? null,
-      unit: s.name,
-      historyHref: `/stats/history/stat/${s.id}`,
-      series: statSeries[i],
-    })),
+    ...mine.flatMap((s) => {
+      const sv = statSeries.get(s.id);
+      if (!sv) return [];
+      const post = h.posts.get(s.postId);
+      // Group by the branch it comes through: a stat on a post you hold sits
+      // under "Your posts"; one you cover sits under the junior branch it rolls
+      // up through, which is the same grouping the report view drills into.
+      const branch = post ? branchLabel(h, s.postId, heldPosts) : 'Other';
+      return [
+        {
+          key: s.id,
+          subjectType: 'stat' as SubjectType,
+          subjectId: s.id,
+          title: s.name,
+          subtitle: post
+            ? `${post.divisionNumber != null ? `Div ${post.divisionNumber} · ` : ''}${
+                post.departmentName ?? '(division level)'
+              } — ${post.title}`
+            : null,
+          unit: s.name,
+          historyHref: `/stats/history/stat/${s.id}`,
+          branch,
+          series: sv,
+        },
+      ];
+    }),
   ];
 
-  return { cards, postCount: postIds.length, statCount: ordered.length };
+  return {
+    cards,
+    postCount: heldPosts.size,
+    statCount: mine.length,
+    coveredCount: mine.filter((s) => !heldPosts.has(s.postId)).length,
+  };
+}
+
+/**
+ * Which top-level branch a stat reaches this member through: the post they hold
+ * if it is one of theirs, otherwise the highest junior below their held post
+ * that still leads to it.
+ */
+function branchLabel(h: Hierarchy, postId: string, heldPosts: Set<string>): string {
+  if (heldPosts.has(postId)) return 'Your posts';
+  let cur: string | null = postId;
+  const seen = new Set<string>();
+  while (cur && !seen.has(cur)) {
+    seen.add(cur);
+    const parent: string | null = h.parentOf(cur);
+    // The child of a post you hold IS the top-level branch — the same card the
+    // report view shows you.
+    if (parent && heldPosts.has(parent)) return h.posts.get(cur)?.title ?? 'Covered';
+    cur = parent;
+  }
+  return 'Covered posts';
 }

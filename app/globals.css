@@ -3454,3 +3454,181 @@ a {
     flex: 1 1 auto;
   }
 }
+
+/* ==========================================================================
+   Effective holder — junior cards + dashboard branches
+   ========================================================================== */
+.db-branch {
+  margin: 0 0 22px;
+}
+.db-branchname {
+  margin: 0 0 10px;
+  padding-bottom: 6px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
+  border-bottom: 2px solid var(--line-strong);
+}
+.db-cardhead h3 {
+  margin: 0;
+  font-size: 15.5px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+/* breadcrumb through the board */
+.rpt-crumbs {
+  margin: 14px 0 6px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.rpt-crumb {
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 600;
+}
+.rpt-crumb:hover {
+  text-decoration: underline;
+}
+.rpt-crumbsep {
+  margin: 0 7px;
+  color: var(--muted);
+}
+.rpt-crumbcur {
+  color: var(--ink);
+  font-weight: 700;
+}
+.rpt-nodehead {
+  margin: 6px 0 2px;
+}
+.rpt-nodehead h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.rpt-nodectx {
+  margin: 2px 0 0;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+.rpt-progress {
+  margin: 10px 0 0;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+/* junior cards: one per branch you cover */
+.jr-section {
+  margin-top: 26px;
+}
+.jr-heading {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 0 0 12px;
+  padding-bottom: 6px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
+  border-bottom: 2px solid var(--line-strong);
+}
+.jr-headinghint {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--muted);
+}
+.jr-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
+}
+.jr-card {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 13px 14px;
+  background: var(--panel);
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  text-decoration: none;
+  min-width: 0;
+}
+.jr-card:hover {
+  border-color: var(--accent);
+  box-shadow: 0 1px 4px rgba(37, 99, 235, 0.12);
+}
+.jr-card-empty {
+  background: var(--bg);
+}
+.jr-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+.jr-context {
+  font-size: 11.5px;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.jr-meta {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+  margin-top: 3px;
+}
+.jr-hfa,
+.jr-warn,
+.jr-count {
+  padding: 1px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 999px;
+}
+.jr-hfa {
+  color: var(--muted);
+  background: var(--bg);
+  border: 1px solid var(--line-strong);
+}
+.jr-warn {
+  color: #92400e;
+  background: #fff8e6;
+  border: 1px solid #e6c65c;
+}
+.jr-count {
+  color: #14532d;
+  background: #ecfdf5;
+  border: 1px solid #6ee7b7;
+}
+.jr-count-none {
+  color: var(--muted);
+  background: transparent;
+  border: 1px dashed var(--line-strong);
+  font-weight: 500;
+}
+
+/* chase-up: active vs invited are different problems */
+.col-groupnote {
+  margin: 0 0 10px;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+.col-owes {
+  margin-left: auto;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+@media (max-width: 639px) {
+  .jr-grid {
+    grid-template-columns: 1fr;
+  }
+  .rpt-crumbs {
+    font-size: 12px;
+  }
+}

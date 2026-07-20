@@ -66,7 +66,8 @@ function CopyButton({
 
 export function CollectionClient({
   weekLabel,
-  missing,
+  missingActive,
+  neverSignedIn,
   reported,
   recipientLine,
   reportLink,
@@ -77,7 +78,8 @@ export function CollectionClient({
 }: {
   weekEnding: string;
   weekLabel: string;
-  missing: MemberReportStatus[];
+  missingActive: MemberReportStatus[];
+  neverSignedIn: MemberReportStatus[];
   reported: MemberReportStatus[];
   recipientLine: string;
   reportLink: string;
@@ -110,32 +112,37 @@ export function CollectionClient({
     <>
       <section className="col-panel">
         <div className="col-panelhead">
-          <h2>Not reported ({missing.length})</h2>
+          <h2>To chase ({missingActive.length})</h2>
           <CopyButton
             text={recipientLine}
             label="Copy all missing emails"
             className="col-btn col-btn-primary"
-            disabled={missing.length === 0}
+            disabled={missingActive.length === 0}
           />
         </div>
 
-        {missing.length === 0 ? (
+        <p className="col-groupnote">
+          Signed-in members who owe a report for this week.
+        </p>
+
+        {missingActive.length === 0 ? (
           <p className="col-alldone">
-            Everyone has reported for the week ending {weekLabel}. Nothing to chase.
+            Every signed-in member has reported for the week ending {weekLabel}.
+            Nothing to chase.
           </p>
         ) : (
           <>
             <ul className="col-list">
-              {missing.map((m) => (
+              {missingActive.map((m) => (
                 <li key={m.memberId} className="col-row">
                   <span className="col-dot col-dot-missing" aria-hidden="true" />
                   <span className="col-name">{m.name || m.email}</span>
                   <span className="col-email">{m.email}</span>
-                  {m.status === 'invited' && (
-                    <span className="col-badge" title="Invited but has never signed in">
-                      invited
-                    </span>
-                  )}
+                  <span className="col-owes">
+                    {m.owedStats === 0
+                      ? 'hours only'
+                      : `${m.owedStats} stat${m.owedStats === 1 ? '' : 's'} + hours`}
+                  </span>
                 </li>
               ))}
             </ul>
@@ -221,6 +228,33 @@ export function CollectionClient({
           <div className="col-preview-body">{outBody}</div>
         </div>
       </section>
+
+      {neverSignedIn.length > 0 && (
+        <section className="col-panel col-panel-quiet">
+          <div className="col-panelhead">
+            <h2>Not signed in yet ({neverSignedIn.length})</h2>
+            <CopyButton
+              text={neverSignedIn.map((m) => m.email).join(', ')}
+              label="Copy their emails"
+            />
+          </div>
+          <p className="col-groupnote">
+            Invited but never signed in, so they cannot report yet. Chasing them
+            for stats is the wrong ask — they need to get in first. Kept out of
+            the chase list above and out of the reminder addresses.
+          </p>
+          <ul className="col-list">
+            {neverSignedIn.map((m) => (
+              <li key={m.memberId} className="col-row">
+                <span className="col-dot" aria-hidden="true" />
+                <span className="col-name">{m.name || m.email}</span>
+                <span className="col-email">{m.email}</span>
+                <span className="col-badge">invited</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <section className="col-panel col-panel-quiet">
         <div className="col-panelhead">

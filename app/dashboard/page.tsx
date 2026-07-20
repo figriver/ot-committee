@@ -29,7 +29,16 @@ export default async function DashboardPage({
   const sp = await searchParams;
   const scale = asScale(sp.scale);
 
-  const { cards, postCount, statCount } = await getMyDashboard(member, scale);
+  const { cards, postCount, statCount, coveredCount } = await getMyDashboard(member, scale);
+
+  // Group by the branch each stat reaches this member through — the same
+  // branches the report view drills into, so the two read the same way.
+  const branches: { name: string; cards: typeof cards }[] = [];
+  for (const c of cards) {
+    let g = branches.find((b) => b.name === c.branch);
+    if (!g) branches.push((g = { name: c.branch, cards: [] }));
+    g.cards.push(c);
+  }
 
   return (
     <>
@@ -40,7 +49,11 @@ export default async function DashboardPage({
             <h1>My Dashboard</h1>
             <p className="db-sub">
               {statCount > 0
-                ? `Your hours and ${statCount} stat${statCount === 1 ? '' : 's'} across ${postCount} post${postCount === 1 ? '' : 's'} you hold.`
+                ? `Your hours and ${statCount} stat${statCount === 1 ? '' : 's'} you are responsible for` +
+                  ` — ${postCount} post${postCount === 1 ? '' : 's'} you hold` +
+                  (coveredCount > 0
+                    ? `, plus ${coveredCount} on unfilled posts you cover.`
+                    : '.')
                 : 'Your hours on post.'}
             </p>
           </div>
@@ -62,8 +75,11 @@ export default async function DashboardPage({
           ))}
         </div>
 
+        {branches.map((b) => (
+        <section key={b.name} className="db-branch">
+          <h2 className="db-branchname">{b.name}</h2>
         <div className="db-grid">
-          {cards.map((c) => (
+          {b.cards.map((c) => (
             // A card with no plot holds one line of text. Left to stretch (which
             // is what keeps chart cards' plots aligned) it matches the tall chart
             // beside it and becomes a large empty box — so it sizes to content.
@@ -75,7 +91,7 @@ export default async function DashboardPage({
             >
               <div className="db-cardhead">
                 <div className="db-cardtitle">
-                  <h2>{c.title}</h2>
+                  <h3>{c.title}</h3>
                   {c.subtitle && <p className="db-cardsub">{c.subtitle}</p>}
                 </div>
                 <Link href={c.historyHref} className="db-histlink">
@@ -103,6 +119,8 @@ export default async function DashboardPage({
             </section>
           ))}
         </div>
+        </section>
+        ))}
 
         {statCount === 0 && (
           <p className="db-empty">

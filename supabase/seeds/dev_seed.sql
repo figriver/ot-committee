@@ -110,6 +110,19 @@ order by d.sort_order
 limit 1;
 
 -- ---------------------------------------------------------------------------
+-- 3c. The dev admin also holds the OT COMMITTEE CHAIRMAN post — mirroring
+--     production, where the Chairman is filled and (almost) everything else is
+--     HFA. This is what makes the roll-up visible: every unfilled branch with no
+--     filled post between it and the top resolves to the Chairman.
+-- ---------------------------------------------------------------------------
+
+insert into dev.post_holders (post_id, member_id, holder_name, sort_order)
+select p.id, '44444444-4444-4444-8444-444444444444', 'Dev Admin', 0
+from dev.posts p
+where p.title = 'OT Committee Chairman'
+limit 1;
+
+-- ---------------------------------------------------------------------------
 -- 4. A named stat on Ann's post + ~12 weeks of values
 --    Week endings are Wednesdays, anchored on the Wed on/after today, so the
 --    demo history always sits in the recent past.

@@ -38,7 +38,7 @@ export default async function CollectionPage({
   const draft = buildReminder(
     template,
     { week: weekLabel, link: reportLink },
-    view.missing.map((m) => m.email),
+    view.missingActive.map((m) => m.email),
   );
 
   const locked = isLockedAt(weekEnding, lockCfg);
@@ -85,8 +85,8 @@ export default async function CollectionPage({
 
         <div className="col-summary">
           <div className="col-stat">
-            <span className="col-statnum">{view.missing.length}</span>
-            <span className="col-statlabel">not reported</span>
+            <span className="col-statnum">{view.missingActive.length}</span>
+            <span className="col-statlabel">to chase</span>
           </div>
           <div className="col-stat col-stat-quiet">
             <span className="col-statnum">{view.reported.length}</span>
@@ -102,7 +102,8 @@ export default async function CollectionPage({
         <CollectionClient
           weekEnding={weekEnding}
           weekLabel={weekLabel}
-          missing={view.missing}
+          missingActive={view.missingActive}
+          neverSignedIn={view.neverSignedIn}
           reported={view.reported}
           recipientLine={draft.recipientLine}
           reportLink={reportLink}

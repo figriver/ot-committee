@@ -5,6 +5,7 @@ import { getCurrentMember } from '@/lib/auth';
 import { getServiceClient } from '@/lib/supabase/server';
 import { isWeekEnding } from '@/lib/week';
 import { assertWeekOpen } from '@/lib/lock';
+import { reportableStatIds } from '@/lib/reporting';
 
 /**
  * Save the current member's weekly report: their Hours (once) + a value for each
@@ -60,11 +61,11 @@ export async function submitReport(formData: FormData): Promise<void> {
   }
 
   if (submitted.length > 0) {
-    const { data: holders } = await supa
-      .from('post_holders')
-      .select('post_id')
-      .eq('member_id', member.id);
-    const held = new Set((holders ?? []).map((h) => h.post_id));
+    // Authorised by EFFECTIVE holder, not direct holder: a member covering an
+    // unfilled branch reports its stats, and someone posted to a junior stops
+    // being able to report the branch that devolved away from them. Same
+    // resolver the UI uses, so what is shown and what is accepted cannot drift.
+    const reportable = await reportableStatIds(member.id);
 
     const { data: stats } = await supa
       .from('stats')
@@ -76,7 +77,7 @@ export async function submitReport(formData: FormData): Promise<void> {
     const postByStat = new Map((stats ?? []).map((s) => [s.id, s.post_id]));
 
     const rows = submitted
-      .filter((s) => held.has(postByStat.get(s.statId)!))
+      .filter((s) => reportable.has(s.statId) && postByStat.has(s.statId))
       .map((s) => ({
         stat_id: s.statId,
         member_id: member.id,
@@ -92,5 +93,9 @@ export async function submitReport(formData: FormData): Promise<void> {
     }
   }
 
-  redirect(`/stats?week=${weekEnding}&saved=1`);
+  // Come back to the level the report was entered at, not the root.
+  const returnPost = String(formData.get('return_post') ?? '').trim();
+  redirect(
+    `/stats?week=${weekEnding}&saved=1${returnPost ? `&post=${returnPost}` : ''}`,
+  );
 }
