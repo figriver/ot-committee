@@ -61,6 +61,16 @@ export async function resolveWeekEnding(requested?: string): Promise<string> {
   return weekEndingOnOrAfter(toISO(new Date()), lockDow);
 }
 
+/** A plain date, no weekday — used for note dates. */
+export function formatDate(iso: string): string {
+  return parseISO(iso).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    timeZone: 'UTC',
+  });
+}
+
 export function formatWeekEnding(iso: string): string {
   return parseISO(iso).toLocaleDateString('en-US', {
     weekday: 'short',

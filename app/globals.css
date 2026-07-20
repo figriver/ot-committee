@@ -2095,3 +2095,435 @@ a {
     color: var(--muted);
   }
 }
+
+/* ==========================================================================
+   Slice 2b — stat / hours history: value table + notes
+   ========================================================================== */
+.sh-wrap {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 24px 20px 64px;
+}
+.sh-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.sh-head h1 {
+  font-size: 22px;
+  margin: 0;
+}
+.sh-back {
+  color: var(--accent);
+  font-size: 13px;
+  white-space: nowrap;
+}
+.sh-sub {
+  color: var(--muted);
+  font-size: 13px;
+  margin: 6px 0 0;
+}
+.sh-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ---- tabs ---- */
+.sh-tabs {
+  display: flex;
+  gap: 4px;
+  margin: 18px 0 16px;
+  border-bottom: 1px solid var(--line);
+}
+.sh-tab {
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  border: 1px solid transparent;
+  border-bottom: none;
+  border-radius: 8px 8px 0 0;
+  margin-bottom: -1px;
+}
+.sh-tab:hover {
+  color: var(--ink);
+}
+.sh-tab-on {
+  color: var(--ink);
+  background: var(--panel);
+  border-color: var(--line);
+}
+
+.sh-err {
+  margin-bottom: 14px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: var(--danger);
+  font-size: 13px;
+}
+.sh-note-readonly,
+.sh-empty {
+  color: var(--muted);
+  font-size: 13px;
+  margin: 0 0 14px;
+}
+
+/* ---- value table ---- */
+.sh-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+  font-size: 13.5px;
+}
+.sh-table th {
+  text-align: left;
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  padding: 10px 14px;
+  background: #fafafa;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+.sh-table td {
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: middle;
+}
+.sh-table tr:last-child td {
+  border-bottom: none;
+}
+.sh-td-week {
+  white-space: nowrap;
+}
+.sh-td-value {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  width: 22%;
+}
+.sh-td-by {
+  color: var(--muted);
+  width: 30%;
+}
+.sh-th-action,
+.sh-td-action {
+  text-align: right;
+  width: 1%;
+  white-space: nowrap;
+}
+.sh-tr-nr .sh-td-week {
+  color: var(--muted);
+}
+.sh-nr {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 5px;
+  background: #f3f4f6;
+  border: 1px solid var(--line-strong);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+.sh-dash {
+  color: var(--muted);
+}
+
+.sh-input {
+  font: inherit;
+  color: #111827;
+  background: #fff;
+  width: 100%;
+  max-width: 140px;
+  padding: 5px 8px;
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  outline: none;
+}
+.sh-input-date {
+  max-width: 190px;
+}
+.sh-textarea {
+  font: inherit;
+  color: #111827;
+  background: #fff;
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  resize: vertical;
+}
+.sh-textarea:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+
+.sh-linkbtn {
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--accent);
+  background: none;
+  border: none;
+  padding: 2px 4px;
+  cursor: pointer;
+}
+.sh-linkbtn:hover {
+  text-decoration: underline;
+}
+.sh-linkbtn:disabled {
+  color: var(--muted);
+  cursor: default;
+  text-decoration: none;
+}
+.sh-linkbtn-quiet {
+  color: var(--muted);
+}
+.sh-linkbtn-danger {
+  color: var(--danger);
+}
+.sh-rowbtns {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+}
+
+/* ---- pager ---- */
+.sh-pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 14px;
+}
+.sh-pagebtn {
+  padding: 7px 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  background: var(--panel);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.sh-pagebtn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.sh-pagebtn-off {
+  color: var(--muted);
+  background: transparent;
+  border-color: var(--line);
+  cursor: default;
+}
+.sh-pagebtn-off:hover {
+  border-color: var(--line);
+  color: var(--muted);
+}
+.sh-pagelabel {
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+/* ---- notes ---- */
+.sh-noteform {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+.sh-noteform-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.sh-flabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-top: 4px;
+}
+.sh-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  margin-top: 6px;
+  cursor: pointer;
+}
+.sh-check input {
+  width: 15px;
+  height: 15px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+.sh-check-off {
+  color: var(--muted);
+  cursor: default;
+}
+.sh-check-off input {
+  cursor: default;
+}
+.sh-btn {
+  align-self: flex-start;
+  margin-top: 10px;
+  padding: 9px 16px;
+  border: none;
+  border-radius: 8px;
+  background: var(--accent);
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.sh-btn:hover {
+  background: #1d4ed8;
+}
+.sh-btn:disabled {
+  background: #93b4f5;
+  cursor: default;
+}
+
+.sh-notes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.sh-noteitem {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.sh-notehead {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.sh-notedate {
+  font-weight: 700;
+  font-size: 13px;
+}
+.sh-noteby {
+  font-size: 12px;
+  color: var(--muted);
+}
+.sh-notebody {
+  margin: 0;
+  font-size: 13.5px;
+  white-space: pre-wrap;
+}
+.sh-notefoot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.sh-notefoot .sh-check {
+  margin-top: 0;
+}
+
+/* ---- links added to the existing stats pages ---- */
+.rpt-history-link {
+  margin-left: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+  text-transform: none;
+  letter-spacing: 0;
+}
+.rpt-history-link:hover {
+  text-decoration: underline;
+}
+.stx-chip-link:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* ---- mobile: the table becomes stacked cards ---- */
+@media (max-width: 639px) {
+  .sh-wrap {
+    padding: 18px 14px 48px;
+  }
+  .sh-table,
+  .sh-table tbody,
+  .sh-table tr,
+  .sh-table td {
+    display: block;
+    width: 100%;
+  }
+  .sh-table {
+    border: none;
+    background: transparent;
+    border-radius: 0;
+  }
+  .sh-table thead {
+    display: none;
+  }
+  .sh-table tr {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 10px 12px;
+    margin-bottom: 10px;
+  }
+  .sh-table td {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 4px 0;
+    border-bottom: none;
+  }
+  .sh-table td::before {
+    content: attr(data-label);
+    font-size: 11.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+  }
+  .sh-td-action {
+    justify-content: flex-end;
+    padding-top: 6px;
+  }
+  .sh-td-value,
+  .sh-td-by {
+    width: auto;
+  }
+  .sh-input {
+    max-width: 160px;
+  }
+  .sh-btn {
+    width: 100%;
+    align-self: stretch;
+    text-align: center;
+  }
+  .sh-pagebtn {
+    flex: 0 0 auto;
+  }
+}

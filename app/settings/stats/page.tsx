@@ -19,10 +19,13 @@ export default async function StatsPage({
   ]);
 
   // group stats by post label for display
-  const byPost = new Map<string, { label: string; names: string[] }>();
+  const byPost = new Map<
+    string,
+    { label: string; stats: { id: string; name: string }[] }
+  >();
   for (const s of stats) {
-    const g = byPost.get(s.postId) ?? { label: s.postLabel, names: [] };
-    g.names.push(s.name);
+    const g = byPost.get(s.postId) ?? { label: s.postLabel, stats: [] };
+    g.stats.push({ id: s.id, name: s.name });
     byPost.set(s.postId, g);
   }
 
@@ -93,10 +96,15 @@ export default async function StatsPage({
               <li key={g.label} className="stx-list-item">
                 <div className="stx-list-post">{g.label}</div>
                 <div className="stx-list-stats">
-                  {g.names.map((n, i) => (
-                    <span key={i} className="stx-chip">
-                      {n}
-                    </span>
+                  {g.stats.map((s) => (
+                    <Link
+                      key={s.id}
+                      href={`/stats/history/stat/${s.id}`}
+                      className="stx-chip stx-chip-link"
+                      title="View & correct this stat’s history"
+                    >
+                      {s.name}
+                    </Link>
                   ))}
                 </div>
               </li>

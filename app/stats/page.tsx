@@ -56,6 +56,12 @@ export default async function ReportPage({
           <section className="rpt-section">
             <label className="rpt-label" htmlFor="hours">
               Hours <span className="rpt-hint">(you, this week — once)</span>
+              <Link
+                href={`/stats/history/hours/${member.id}`}
+                className="rpt-history-link"
+              >
+                History
+              </Link>
             </label>
             <input
               id="hours"
@@ -93,6 +99,12 @@ export default async function ReportPage({
                     <div key={s.statId} className="rpt-stat">
                       <label className="rpt-stat-label" htmlFor={`stat_${s.statId}`}>
                         {s.name}
+                        <Link
+                          href={`/stats/history/stat/${s.statId}`}
+                          className="rpt-history-link"
+                        >
+                          History
+                        </Link>
                       </label>
                       <input
                         id={`stat_${s.statId}`}
