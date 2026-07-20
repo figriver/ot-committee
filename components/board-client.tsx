@@ -455,6 +455,9 @@ function DeptColumn({ dept, color }: { dept: DepartmentFull; color: string }) {
 function ChairmanBox({ post }: { post: ExecPost | null }) {
   const { open } = useMenu();
   const edit = useEditable('posts', post?.id ?? '', 'title', post?.title ?? null);
+  const holderEdit = useInlineText(post?.holderName ?? null, async (v) => {
+    if (post) await setPostHolder(post.id, v);
+  });
   const run = useRowActions();
   if (!post) {
     return (
@@ -465,15 +468,16 @@ function ChairmanBox({ post }: { post: ExecPost | null }) {
     );
   }
   const items: MenuItem[] = [
-    { label: 'Edit', onSelect: () => edit.setEditing(true) },
+    { label: 'Edit title', onSelect: () => edit.setEditing(true) },
+    { label: post.holderName ? 'Edit holder' : 'Set holder', onSelect: () => holderEdit.setEditing(true) },
+    ...(post.holderName
+      ? [{ label: 'Mark HFA', onSelect: () => run(() => setPostHolder(post.id, '')) }]
+      : []),
+    { separator: true, label: '' },
     { label: 'Add Executive', onSelect: () => run(() => addExecutive()) },
-    {
-      label: post.is_vacant ? 'Mark Filled' : 'Mark HFA',
-      onSelect: () => run(() => updateField('posts', post.id, 'is_vacant', !post.is_vacant)),
-    },
   ];
   return (
-    <div className={`ob-exec chairman${edit.pending ? ' pending' : ''}`} onContextMenu={(e) => open(e, items)}>
+    <div className={`ob-exec chairman${edit.pending || holderEdit.pending ? ' pending' : ''}`} onContextMenu={(e) => open(e, items)}>
       <div className="ob-exec-role">Chairman</div>
       <div className="ob-exec-title">
         {edit.editing ? (
@@ -483,29 +487,42 @@ function ChairmanBox({ post }: { post: ExecPost | null }) {
         )}
         <Caret items={items} tone="light" />
       </div>
-      <HolderLine name={post.holderName} tone="dark" />
+      <HolderEditLine edit={holderEdit} name={post.holderName} tone="dark" />
     </div>
   );
 }
 
 /**
- * The holder line shown inside a box: the person's name, or a VACANT tag when
- * unfilled. Used on every box that can hold a person so none renders blank.
- * `tone="dark"` = the box background is dark (white name); `light` = light box.
+ * The holder line shown inside a box: the person's name, or an HFA tag when
+ * unfilled — and editable in place. `edit` is a useInlineText state whose commit
+ * writes through setPostHolder to the same post record. `tone="dark"` = dark box
+ * (white name); `light` = light box. Double-click to edit.
  */
-function HolderLine({
+function HolderEditLine({
+  edit,
   name,
   tone,
 }: {
+  edit: EditState;
   name: string | null;
   tone: 'dark' | 'light';
 }) {
   return (
-    <div className={`ob-holderline ${tone}`}>
-      {name ? (
-        <span className="ob-holderline-name">{name}</span>
+    <div className={`ob-holderline ${tone}${edit.pending ? ' pending' : ''}`}>
+      {edit.editing ? (
+        <EditField state={edit} placeholder="holder name" />
       ) : (
-        <span className="ob-vacant">HFA</span>
+        <span
+          className="ob-holderline-edit"
+          title="Double-click to edit the holder"
+          onDoubleClick={() => edit.setEditing(true)}
+        >
+          {name ? (
+            <span className="ob-holderline-name">{name}</span>
+          ) : (
+            <span className="ob-vacant">HFA</span>
+          )}
+        </span>
       )}
     </div>
   );
@@ -582,13 +599,16 @@ function HeadBox({ post, kind }: { post: PostWithHolders | null; kind: 'division
 function ExecBox({ post }: { post: ExecPost }) {
   const { open } = useMenu();
   const edit = useEditable('posts', post.id, 'title', post.title);
+  const holderEdit = useInlineText(post.holderName, async (v) => {
+    await setPostHolder(post.id, v);
+  });
   const run = useRowActions();
   const items: MenuItem[] = [
-    { label: 'Edit', onSelect: () => edit.setEditing(true) },
-    {
-      label: post.is_vacant ? 'Mark Filled' : 'Mark HFA',
-      onSelect: () => run(() => updateField('posts', post.id, 'is_vacant', !post.is_vacant)),
-    },
+    { label: 'Edit title', onSelect: () => edit.setEditing(true) },
+    { label: post.holderName ? 'Edit holder' : 'Set holder', onSelect: () => holderEdit.setEditing(true) },
+    ...(post.holderName
+      ? [{ label: 'Mark HFA', onSelect: () => run(() => setPostHolder(post.id, '')) }]
+      : []),
     { separator: true, label: '' },
     {
       label: 'Remove executive',
@@ -599,7 +619,7 @@ function ExecBox({ post }: { post: ExecPost }) {
     },
   ];
   return (
-    <div className={`ob-exec execsec${edit.pending ? ' pending' : ''}`} onContextMenu={(e) => open(e, items)}>
+    <div className={`ob-exec execsec${edit.pending || holderEdit.pending ? ' pending' : ''}`} onContextMenu={(e) => open(e, items)}>
       <div className="ob-exec-role">Executive</div>
       <div className="ob-exec-title">
         {edit.editing ? (
@@ -609,7 +629,7 @@ function ExecBox({ post }: { post: ExecPost }) {
         )}
         <Caret items={items} tone="light" />
       </div>
-      <HolderLine name={post.holderName} tone="dark" />
+      <HolderEditLine edit={holderEdit} name={post.holderName} tone="dark" />
     </div>
   );
 }

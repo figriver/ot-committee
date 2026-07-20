@@ -534,6 +534,23 @@ a {
 .ob-holderline.light .ob-holderline-name {
   color: #111827;
 }
+.ob-holderline.pending {
+  opacity: 0.55;
+}
+/* editable holder target — subtle hover so it reads as editable */
+.ob-holderline-edit {
+  cursor: text;
+  border-radius: 4px;
+  padding: 0 4px;
+  margin: 0 -4px;
+  transition: background 0.12s;
+}
+.ob-holderline.dark .ob-holderline-edit:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+.ob-holderline.light .ob-holderline-edit:hover {
+  background: rgba(0, 0, 0, 0.06);
+}
 
 /* ---- Overview tree + CSS connectors ----
    Nested <ul>/<li>: Chairman → executives → their division groups. The
