@@ -456,11 +456,46 @@ function ChairmanBox({ post }: { post: ExecPost | null }) {
         ) : (
           <span onDoubleClick={() => edit.setEditing(true)}>{post.title}</span>
         )}
-        {post.is_vacant && <span className="ob-vacant">vacant</span>}
         <Caret items={items} tone="light" />
       </div>
+      <HolderLine name={post.holderName} tone="dark" />
     </div>
   );
+}
+
+/**
+ * The holder line shown inside a box: the person's name, or a VACANT tag when
+ * unfilled. Used on every box that can hold a person so none renders blank.
+ * `tone="dark"` = the box background is dark (white name); `light` = light box.
+ */
+function HolderLine({
+  name,
+  tone,
+}: {
+  name: string | null;
+  tone: 'dark' | 'light';
+}) {
+  return (
+    <div className={`ob-holderline ${tone}`}>
+      {name ? (
+        <span className="ob-holderline-name">{name}</span>
+      ) : (
+        <span className="ob-vacant">vacant</span>
+      )}
+    </div>
+  );
+}
+
+/** First (senior) post of a department — its Director / head. */
+function deptHeadPost(dept: DepartmentFull): PostWithHolders | undefined {
+  if (dept.posts.length) return dept.posts[0];
+  for (const s of dept.sections) if (s.posts.length) return s.posts[0];
+  return undefined;
+}
+
+/** Holder name of a post's first named holder, or null (= vacant). */
+function holderNameOf(post: PostWithHolders | undefined): string | null {
+  return post?.holders.find((h) => h.holder_name)?.holder_name ?? null;
 }
 
 /** One executive post under the Chairman; heads the division group beneath it. */
@@ -492,9 +527,9 @@ function ExecBox({ post }: { post: ExecPost }) {
         ) : (
           <span onDoubleClick={() => edit.setEditing(true)}>{post.title}</span>
         )}
-        {post.is_vacant && <span className="ob-vacant">vacant</span>}
         <Caret items={items} tone="light" />
       </div>
+      <HolderLine name={post.holderName} tone="dark" />
     </div>
   );
 }
@@ -540,6 +575,10 @@ function DivisionColumn({
   ];
 
   const raised = RAISED_DIVISIONS.has(division.number);
+  // The division's senior officer = the head post of its first department.
+  const headHolder = holderNameOf(
+    division.departments[0] ? deptHeadPost(division.departments[0]) : undefined,
+  );
 
   return (
     <div className={`ob-divcol${raised ? ' ob-raised' : ''}`}>
@@ -548,19 +587,28 @@ function DivisionColumn({
         style={{ background: color, color: ink }}
         onContextMenu={(e) => open(e, items)}
       >
-        <span className="ob-divcol-num" style={{ borderColor: ink, color: ink }}>
-          Div {division.number}
-        </span>
-        <Link href={`/board/${division.number}`} className="ob-divcol-name" style={{ color: ink }}>
-          {nameEdit.editing ? (
-            <span onClick={(e) => e.preventDefault()}>
-              <EditField state={nameEdit} />
-            </span>
+        <div className="ob-divcol-head-top">
+          <span className="ob-divcol-num" style={{ borderColor: ink, color: ink }}>
+            Div {division.number}
+          </span>
+          <Link href={`/board/${division.number}`} className="ob-divcol-name" style={{ color: ink }}>
+            {nameEdit.editing ? (
+              <span onClick={(e) => e.preventDefault()}>
+                <EditField state={nameEdit} />
+              </span>
+            ) : (
+              division.name
+            )}
+          </Link>
+          <Caret items={items} tone={ink === '#ffffff' ? 'light' : 'dark'} />
+        </div>
+        <div className="ob-divcol-head-holder">
+          {headHolder ? (
+            <span style={{ color: ink }}>{headHolder}</span>
           ) : (
-            division.name
+            <span className="ob-vacant">vacant</span>
           )}
-        </Link>
-        <Caret items={items} tone={ink === '#ffffff' ? 'light' : 'dark'} />
+        </div>
       </div>
 
       <div className="ob-divcol-depts">
@@ -596,6 +644,8 @@ function DeptBox({
     { separator: true, label: '' },
     { label: 'Remove', danger: true, onSelect: () => confirmRemove('department') && run(() => deleteRow('departments', dept.id)) },
   ];
+  const headHolder = holderNameOf(deptHeadPost(dept));
+
   return (
     <div className={`ob-deptbox${edit.pending ? ' pending' : ''}`} onContextMenu={(e) => open(e, items)}>
       <div className="ob-deptbox-head">
@@ -609,6 +659,7 @@ function DeptBox({
           <Link href={`/board/${divisionNumber}`}>{dept.name}</Link>
         )}
       </span>
+      <HolderLine name={headHolder} tone="light" />
     </div>
   );
 }

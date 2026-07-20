@@ -80,16 +80,34 @@ export async function getExecTier(): Promise<ExecTier> {
     .order('sort_order', { ascending: true });
   if (exErr) throw new Error(`getExecTier(execs): ${exErr.message}`);
 
+  // Holders for the whole exec tier (chairman + reports), read from post_holders —
+  // the SAME source the department post boxes use, so exec boxes aren't blank.
+  const execIds = [chairRow.id, ...(execRows ?? []).map((r) => r.id)];
+  const { data: holderRows, error: hErr } = await supa
+    .from('post_holders')
+    .select('post_id, holder_name, sort_order')
+    .in('post_id', execIds)
+    .order('sort_order', { ascending: true });
+  if (hErr) throw new Error(`getExecTier(holders): ${hErr.message}`);
+  const holderByPost = new Map<string, string>();
+  for (const h of holderRows ?? []) {
+    if (h.holder_name && !holderByPost.has(h.post_id)) {
+      holderByPost.set(h.post_id, h.holder_name);
+    }
+  }
+
   return {
     chairman: {
       id: chairRow.id,
       title: chairRow.title,
       is_vacant: chairRow.is_vacant,
+      holderName: holderByPost.get(chairRow.id) ?? null,
     },
     execs: (execRows ?? []).map((r) => ({
       id: r.id,
       title: r.title,
       is_vacant: r.is_vacant,
+      holderName: holderByPost.get(r.id) ?? null,
     })) as ExecPost[],
   };
 }

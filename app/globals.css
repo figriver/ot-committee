@@ -504,9 +504,35 @@ a {
   align-items: center;
   justify-content: center;
   gap: 6px;
+  /* Reserve two title lines so a shorter (1-line) exec title doesn't make its
+     box — and therefore its whole division group — sit higher than the others. */
+  min-height: 38px;
 }
 .ob-exec.pending {
   opacity: 0.55;
+}
+
+/* ---- Holder line (person's name, or VACANT tag, inside a box) ---- */
+.ob-holderline {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 3px;
+  min-height: 16px;
+}
+.ob-exec .ob-holderline {
+  justify-content: center; /* exec boxes are centered */
+}
+.ob-holderline-name {
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+.ob-holderline.dark .ob-holderline-name {
+  color: #f9fafb;
+}
+.ob-holderline.light .ob-holderline-name {
+  color: #111827;
 }
 
 /* ---- Overview tree + CSS connectors ----
@@ -648,11 +674,21 @@ a {
 .ob-divcol-head {
   padding: 9px 10px;
   display: flex;
-  align-items: center;
-  gap: 6px;
+  flex-direction: column;
+  gap: 3px;
   font-weight: 700;
   cursor: pointer;
-  min-height: 40px;
+}
+.ob-divcol-head-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.ob-divcol-head-holder {
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.2;
+  min-height: 15px;
 }
 .ob-divcol-num {
   font-size: 10px;

@@ -79,6 +79,7 @@ export type ExecPost = {
   id: string;
   title: string;
   is_vacant: boolean;
+  holderName: string | null; // the person holding this post (from post_holders), or null = vacant
 };
 
 /** The Chairman plus every executive post beneath it (in board order). */
