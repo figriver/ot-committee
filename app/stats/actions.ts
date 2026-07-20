@@ -103,3 +103,125 @@ export async function submitReport(formData: FormData): Promise<void> {
     `/stats?week=${weekEnding}&saved=1${returnPost ? `&post=${returnPost}` : ''}`,
   );
 }
+
+// ---------------------------------------------------------------------------
+// Adjustable stats — the manual side (base + MANUAL, note required)
+// ---------------------------------------------------------------------------
+
+import { revalidatePath } from 'next/cache';
+import { canEditSubject } from '@/lib/history';
+import { assertWeekWritable } from '@/lib/lock';
+
+/** Split a names blob (newlines or commas) into distinct, trimmed names. */
+function parseNames(raw: string): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const part of raw.split(/[\n,]+/)) {
+    const n = part.trim();
+    if (n && !seen.has(n.toLowerCase())) {
+      seen.add(n.toLowerCase());
+      out.push(n);
+    }
+  }
+  return out;
+}
+
+/**
+ * Save (or clear) the MANUAL adjustment for an adjustable stat + week.
+ *
+ * The value shown is base + manual; the base is computed live, this writes the
+ * manual part. A note is REQUIRED (also enforced by the DB). For an
+ * active_members stat the manual is "named people not in the system": the caller
+ * sends the names, the count of distinct names becomes manual_amount, and the
+ * names are stored (and folded into the note) so nobody is double-counted and it
+ * can be reconciled later.
+ *
+ * Authorized by EFFECTIVE holder (same as correcting the stat) and gated by the
+ * week lock — a closed week is writable only as an admin override, which records
+ * updated_by, exactly like a correction.
+ *
+ * An empty manual (blank amount, or no names) DELETES the row, returning the week
+ * to base-only.
+ */
+export async function saveAdjustment(
+  statId: string,
+  weekEnding: string,
+  manualRaw: string,
+  namesRaw: string,
+  noteRaw: string,
+): Promise<void> {
+  const member = await getCurrentMember();
+  if (!member) redirect('/login');
+  if (!(await canEditSubject(member, 'stat', statId))) {
+    throw new Error('You can only adjust stats you are responsible for.');
+  }
+  if (!isWeekEnding(weekEnding)) throw new Error('Bad week.');
+  await assertWeekWritable(member, weekEnding); // lock (admin override allowed)
+
+  const supa = getServiceClient();
+  const { data: stat } = await supa
+    .from('stats')
+    .select('is_adjustable, base_kind')
+    .eq('id', statId)
+    .maybeSingle();
+  if (!stat?.is_adjustable) throw new Error('Not an adjustable stat.');
+
+  const note = noteRaw.trim();
+  let manual: number;
+  let namesJson: string | null = null;
+  let finalNote = note;
+
+  if (stat.base_kind === 'active_members') {
+    const names = parseNames(namesRaw);
+    if (names.length === 0) {
+      // no names = no manual add → clear the row back to base-only
+      await supa.from('stat_adjustments').delete().eq('stat_id', statId).eq('week_ending', weekEnding);
+      revalidatePath('/stats', 'layout');
+      revalidatePath('/dashboard');
+      return;
+    }
+    manual = names.length; // total adds the count of distinct named people
+    namesJson = JSON.stringify(names);
+    // The note must NAME the people; fold the names in so it always does.
+    finalNote = note ? `${note} — named: ${names.join(', ')}` : `Named active (not in system): ${names.join(', ')}`;
+  } else {
+    const trimmed = manualRaw.trim();
+    if (trimmed === '') {
+      await supa.from('stat_adjustments').delete().eq('stat_id', statId).eq('week_ending', weekEnding);
+      revalidatePath('/stats', 'layout');
+      revalidatePath('/dashboard');
+      return;
+    }
+    manual = Number(trimmed);
+    if (!Number.isFinite(manual)) throw new Error('Manual amount must be a number.');
+    if (finalNote === '') throw new Error('A note is required for a manual adjustment.');
+  }
+  if (finalNote === '') throw new Error('A note is required for a manual adjustment.');
+
+  const now = new Date().toISOString();
+  // created_by stays the ORIGINAL author (e.g. the import) — only updated_by
+  // moves — so update in place when the row exists, insert otherwise.
+  const { data: existing } = await supa
+    .from('stat_adjustments')
+    .select('id')
+    .eq('stat_id', statId)
+    .eq('week_ending', weekEnding)
+    .maybeSingle();
+
+  const fields = {
+    manual_amount: manual,
+    note: finalNote,
+    names_json: namesJson,
+    source: 'manual',
+    updated_by: member.id,
+    updated_at: now,
+  };
+  const { error } = existing
+    ? await supa.from('stat_adjustments').update(fields).eq('id', existing.id)
+    : await supa
+        .from('stat_adjustments')
+        .insert({ stat_id: statId, week_ending: weekEnding, created_by: member.id, ...fields });
+  if (error) throw new Error(`saveAdjustment: ${error.message}`);
+  revalidatePath('/stats', 'layout');
+  revalidatePath('/dashboard');
+}

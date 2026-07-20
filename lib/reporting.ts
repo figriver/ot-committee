@@ -1,7 +1,7 @@
 import 'server-only';
 import { getServiceClient } from '@/lib/supabase/server';
 import { loadHierarchy, type Hierarchy, type PostNode } from '@/lib/hierarchy';
-import { loadAdjustable } from '@/lib/adjustable';
+import { loadAdjustable, getWeekBreakdown, type AdjustableStat, type BaseKind } from '@/lib/adjustable';
 
 // The JUNIOR-CARD reporting view.
 //
@@ -33,6 +33,20 @@ export type EntryStat = {
   value: string | null;
 };
 
+export type AdjustableEntry = {
+  statId: string;
+  name: string;
+  baseKind: BaseKind;
+  baseLabel: string; // human description of where the base comes from
+  base: number;
+  manual: number;
+  note: string;
+  names: string[];
+  total: number;
+  hasManual: boolean;
+  historyHref: string;
+};
+
 export type ReportNode = {
   postId: string | null; // null = the member's root view
   hours: string | null; // the member's own hours for the week (root only)
@@ -40,6 +54,7 @@ export type ReportNode = {
   context: string | null;
   breadcrumb: { postId: string | null; title: string }[];
   ownStats: EntryStat[];
+  adjustables: AdjustableEntry[];
   juniors: JuniorCard[];
   /** Posts held directly — only used at the root. */
   heldPosts: { postId: string; title: string; context: string }[];
@@ -70,6 +85,36 @@ async function valuesForWeek(
     if (e.value != null) out.set(e.stat_id, String(e.value));
   }
   return out;
+}
+
+const BASE_LABEL: Record<BaseKind, string> = {
+  hours_sum: 'Sum of members\u2019 hours reported this week',
+  active_members: 'Members who reported hours this week',
+  none: 'No system base yet \u2014 fully manual',
+};
+
+async function adjustableEntriesFor(
+  stats: Map<string, AdjustableStat>,
+  weekEnding: string,
+): Promise<AdjustableEntry[]> {
+  const out: AdjustableEntry[] = [];
+  for (const stat of stats.values()) {
+    const b = await getWeekBreakdown(stat, weekEnding);
+    out.push({
+      statId: stat.id,
+      name: stat.name,
+      baseKind: stat.baseKind,
+      baseLabel: BASE_LABEL[stat.baseKind],
+      base: b.base,
+      manual: b.manual,
+      note: b.note ?? '',
+      names: b.names ?? [],
+      total: b.total,
+      hasManual: b.hasManual,
+      historyHref: `/stats/history/stat/${stat.id}`,
+    });
+  }
+  return out.sort((a, b) => a.name.localeCompare(b.name));
 }
 
 function cardFor(
@@ -158,6 +203,11 @@ export async function getReportView(
           value: reported.get(s.id) ?? null,
         })),
     );
+    // Adjustable stats on the posts held directly — base+manual entry, here.
+    const rootAdj = await loadAdjustable(
+      held.flatMap((hp) => h.statsOf(hp.postId).map((s) => s.id)),
+    );
+    const adjustables = await adjustableEntriesFor(rootAdj, weekEnding);
     return {
       postId: null,
       hours,
@@ -165,6 +215,7 @@ export async function getReportView(
       context: null,
       breadcrumb: [],
       ownStats,
+      adjustables,
       juniors,
       heldPosts: held,
       totalBelow: mine.length,
@@ -192,6 +243,7 @@ export async function getReportView(
   breadcrumb.unshift({ postId: null, title: 'Your posts' });
 
   const below = h.statsBelow(postId).filter((s) => h.effectiveHolderOf(s.postId) === memberId);
+  const focusedAdj = await loadAdjustable(h.statsOf(postId).map((s) => s.id));
   return {
     postId,
     hours,
@@ -206,6 +258,7 @@ export async function getReportView(
         name: s.name,
         value: reported.get(s.id) ?? null,
       })),
+    adjustables: await adjustableEntriesFor(focusedAdj, weekEnding),
     juniors: h
       .childrenOf(postId)
       .filter((c) => h.effectiveHolderOf(c) === memberId)

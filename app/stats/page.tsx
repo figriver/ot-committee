@@ -6,6 +6,7 @@ import { resolveWeekEnding, addDaysISO, formatWeekEnding } from '@/lib/week';
 import { getLockConfig, isLockedAt, describeLock } from '@/lib/lock';
 import { AccountBar } from '@/components/account-bar';
 import { submitReport } from './actions';
+import { AdjustableEntryCard } from '@/components/adjustable-entry';
 
 export const dynamic = 'force-dynamic';
 
@@ -195,6 +196,30 @@ export default async function ReportPage({
             </button>
           )}
         </form>
+
+        {/* Adjustable stats (base + manual): entered outside the plain form,
+            since each saves its own base+manual+note via saveAdjustment. */}
+        {view.adjustables.length > 0 && (
+          <section className="adj-section">
+            <h3 className="adj-heading">
+              Computed stats
+              <span className="adj-headinghint">
+                base is system-computed — add the manual part with a note
+              </span>
+            </h3>
+            <div className="adj-grid">
+              {view.adjustables.map((a) => (
+                <AdjustableEntryCard
+                  key={a.statId}
+                  entry={a}
+                  weekEnding={weekEnding}
+                  locked={locked}
+                  isAdmin={member.role === 'admin'}
+                />
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* junior cards — the branches rolling up to this member */}
         {view.juniors.length > 0 && (
