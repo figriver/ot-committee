@@ -74,17 +74,21 @@ async function valuesForWeek(
 function cardFor(
   h: Hierarchy,
   postId: string,
+  memberId: string,
   reported: Map<string, string>,
 ): JuniorCard {
   const p = h.posts.get(postId)!;
-  const below = h.statsBelow(postId);
+  // Count only the stats under here that roll up to THIS member. A stat on a
+  // deeper post that someone else holds has devolved to them — it is not this
+  // member's to report, so it must not inflate the card's "n reported" badge.
+  const below = h.statsBelow(postId).filter((s) => h.effectiveHolderOf(s.postId) === memberId);
   return {
     postId,
     title: p.title,
     context: contextOf(p),
     isHFA: !p.holderMemberId,
     hasUnlinkedHolder: p.hasUnlinkedHolder,
-    directStats: h.statsOf(postId).length,
+    directStats: h.statsOf(postId).filter((s) => h.effectiveHolderOf(s.postId) === memberId).length,
     totalStats: below.length,
     reportedStats: below.filter((s) => reported.has(s.id)).length,
   };
@@ -132,7 +136,7 @@ export async function getReportView(
     const juniors: JuniorCard[] = [];
     for (const hp of held) {
       for (const c of h.childrenOf(hp.postId)) {
-        if (h.effectiveHolderOf(c) === memberId) juniors.push(cardFor(h, c, reported));
+        if (h.effectiveHolderOf(c) === memberId) juniors.push(cardFor(h, c, memberId, reported));
       }
     }
     const ownStats: EntryStat[] = held.flatMap((hp) =>
@@ -175,22 +179,25 @@ export async function getReportView(
   }
   breadcrumb.unshift({ postId: null, title: 'Your posts' });
 
-  const below = h.statsBelow(postId);
+  const below = h.statsBelow(postId).filter((s) => h.effectiveHolderOf(s.postId) === memberId);
   return {
     postId,
     hours,
     title: node.title,
     context: contextOf(node),
     breadcrumb,
-    ownStats: h.statsOf(postId).map((s) => ({
-      statId: s.id,
-      name: s.name,
-      value: reported.get(s.id) ?? null,
-    })),
+    ownStats: h
+      .statsOf(postId)
+      .filter((s) => h.effectiveHolderOf(s.postId) === memberId)
+      .map((s) => ({
+        statId: s.id,
+        name: s.name,
+        value: reported.get(s.id) ?? null,
+      })),
     juniors: h
       .childrenOf(postId)
       .filter((c) => h.effectiveHolderOf(c) === memberId)
-      .map((c) => cardFor(h, c, reported)),
+      .map((c) => cardFor(h, c, memberId, reported)),
     heldPosts: [],
     totalBelow: below.length,
     reportedBelow: below.filter((s) => reported.has(s.id)).length,
