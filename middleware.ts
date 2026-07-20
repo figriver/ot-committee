@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 
 // Everything under these paths requires a logged-in Supabase user. (Admin-only
 // areas like /settings are additionally gated server-side with requireAdmin.)
-const PROTECTED = ['/board', '/stats', '/settings'];
+const PROTECTED = ['/board', '/dashboard', '/stats', '/settings'];
 
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({ request });

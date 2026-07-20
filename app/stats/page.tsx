@@ -27,8 +27,8 @@ export default async function ReportPage({
       <div className="rpt-wrap">
         <div className="rpt-head">
           <h1>Stats</h1>
-          <Link href="/board" className="rpt-back">
-            ← Board
+          <Link href="/dashboard" className="rpt-back">
+            My Dashboard →
           </Link>
         </div>
         <p className="rpt-sub">

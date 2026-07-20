@@ -11,6 +11,9 @@ import type { Member } from '@/lib/types';
 function revalidate() {
   // Covers /stats and every nested history route.
   revalidatePath('/stats', 'layout');
+  // The 2d dashboard graphs the same entries, so a correction, a note, or a
+  // rollup change made here must not leave a stale dashboard behind.
+  revalidatePath('/dashboard');
 }
 
 function asSubjectType(v: unknown): SubjectType {

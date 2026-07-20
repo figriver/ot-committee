@@ -2687,3 +2687,143 @@ a {
     width: 100%;
   }
 }
+
+/* ==========================================================================
+   Slice 2d — my dashboard
+   ========================================================================== */
+.db-wrap {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 22px 18px 60px;
+}
+.db-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.db-head h1 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.db-sub {
+  margin: 4px 0 0;
+  font-size: 13.5px;
+  color: var(--muted);
+}
+.db-report {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--accent);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.db-report:hover {
+  text-decoration: underline;
+}
+
+/* One scale selector for the whole page — every card reads the same time base. */
+.db-scales {
+  display: inline-flex;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  overflow: hidden;
+  margin: 16px 0 14px;
+}
+
+/* Two columns on a wide screen; the chart inside each card scrolls sideways on
+   its own, so the grid never forces the page to scroll horizontally. */
+.db-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(440px, 1fr));
+  gap: 16px;
+  /* stretch (the default): cards in a row match heights, so their top edges and
+     plot areas line up instead of stepping. */
+}
+.db-card {
+  min-width: 0; /* let a grid child shrink instead of widening the row */
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 14px 14px 6px;
+}
+/* The chart already draws its own card; inside a dashboard card it is just the
+   plot, so strip the doubled frame. */
+.db-card .gr-card {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  margin-bottom: 0;
+}
+.db-cardhead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.db-cardtitle {
+  min-width: 0;
+}
+.db-cardhead h2 {
+  margin: 0;
+  font-size: 15.5px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.db-cardsub {
+  /* Reserve two lines: a long post label ("Div 1 · Department of … — Director
+     of …") wraps while a short one does not, and without the reservation the
+     charts beside each other start at different heights. Same fix as
+     .ob-exec-title on the board. */
+  min-height: 34px;
+  margin: 2px 0 0;
+  font-size: 12.5px;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.db-histlink {
+  flex: 0 0 auto;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--accent);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.db-histlink:hover {
+  text-decoration: underline;
+}
+.db-empty {
+  margin: 16px 0 0;
+  padding: 14px 16px;
+  background: var(--panel);
+  border: 1px dashed var(--line-strong);
+  border-radius: 12px;
+  font-size: 13.5px;
+  color: var(--muted);
+}
+
+@media (max-width: 639px) {
+  .db-wrap {
+    padding: 16px 12px 48px;
+  }
+  /* Single column: minmax(440px,…) would otherwise overflow a 360px screen. */
+  .db-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .db-card {
+    padding: 12px 10px 6px;
+  }
+  /* Single column — nothing to align against, so don't reserve the second line. */
+  .db-cardsub {
+    min-height: 0;
+  }
+  .db-head h1 {
+    font-size: 19px;
+  }
+}

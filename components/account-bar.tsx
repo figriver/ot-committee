@@ -25,6 +25,9 @@ export function AccountBar({
         <Link href="/board" className="acct-link">
           Org Board
         </Link>
+        <Link href="/dashboard" className="acct-link">
+          My Dashboard
+        </Link>
         <Link href="/stats" className="acct-link">
           Stats
         </Link>

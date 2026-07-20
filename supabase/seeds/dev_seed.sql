@@ -88,6 +88,28 @@ join lateral (
 where d.head_post_id is not null;
 
 -- ---------------------------------------------------------------------------
+-- 3b. The dev admin (michael) holds TWO posts, so logging in against dev shows
+--     a multi-post dashboard (slice 2d): stats from both posts on one page.
+--     Posts chosen deterministically: Division 4's head Secretary, and the head
+--     post of Division 1's first department.
+-- ---------------------------------------------------------------------------
+
+insert into dev.post_holders (post_id, member_id, holder_name, sort_order)
+select p.id, '44444444-4444-4444-8444-444444444444', 'Dev Admin', 0
+from dev.posts p
+join dev.divisions v on v.id = p.division_id
+where v.number = 4
+limit 1;
+
+insert into dev.post_holders (post_id, member_id, holder_name, sort_order)
+select d.head_post_id, '44444444-4444-4444-8444-444444444444', 'Dev Admin', 0
+from dev.departments d
+join dev.divisions v on v.id = d.division_id and v.number = 1
+where d.head_post_id is not null
+order by d.sort_order
+limit 1;
+
+-- ---------------------------------------------------------------------------
 -- 4. A named stat on Ann's post + ~12 weeks of values
 --    Week endings are Wednesdays, anchored on the Wed on/after today, so the
 --    demo history always sits in the recent past.
@@ -128,6 +150,67 @@ select '11111111-1111-4111-8111-111111111111',
 from anchor a, demo d;
 
 -- ---------------------------------------------------------------------------
+-- 4b. Two stats on the dev admin's two posts, with different ROLLUP rules, so
+--     the 2d dashboard shows several cards at once and the Monthly/Quarterly
+--     view proves each card states its own rule (summing a percentage would be
+--     nonsense — see 0010).
+-- ---------------------------------------------------------------------------
+
+insert into dev.stats (id, post_id, name, active, rollup)
+select '66666666-6666-4666-8666-666666666666', p.id, 'Letters Out', true, 'sum'
+from dev.posts p
+join dev.divisions v on v.id = p.division_id
+where v.number = 4
+limit 1;
+
+insert into dev.stats (id, post_id, name, active, rollup)
+select '77777777-7777-4777-8777-777777777777', d.head_post_id,
+       'Percent of OTC Stats Rising', true, 'average'
+from dev.departments d
+join dev.divisions v on v.id = d.division_id and v.number = 1
+where d.head_post_id is not null
+order by d.sort_order
+limit 1;
+
+-- Letters Out: a clear climb with one NR gap and two drops.
+with anchor as (
+  select (current_date + ((3 - extract(dow from current_date)::int + 7) % 7))::date as this_wed
+), demo(weeks_back, value) as (
+  values (11, 40), (10, 52), (9, 48), (8, 61), (7, 75), (5, 70),
+         (4, 88), (3, 96), (2, 91), (1, 110), (0, 124)
+)
+insert into dev.stat_entries (stat_id, member_id, week_ending, value)
+select '66666666-6666-4666-8666-666666666666',
+       '44444444-4444-4444-8444-444444444444',
+       (a.this_wed - (d.weeks_back * 7)), d.value
+from anchor a, demo d;
+
+-- Percent rising: a rate, so it stays in 0-100 and averages on rollup.
+with anchor as (
+  select (current_date + ((3 - extract(dow from current_date)::int + 7) % 7))::date as this_wed
+), demo(weeks_back, value) as (
+  values (11, 55), (10, 62), (9, 58), (8, 71), (6, 66), (5, 74),
+         (4, 80), (3, 77), (2, 85), (1, 83), (0, 90)
+)
+insert into dev.stat_entries (stat_id, member_id, week_ending, value)
+select '77777777-7777-4777-8777-777777777777',
+       '44444444-4444-4444-8444-444444444444',
+       (a.this_wed - (d.weeks_back * 7)), d.value
+from anchor a, demo d;
+
+-- The dev admin's own hours (the dashboard's first card).
+with anchor as (
+  select (current_date + ((3 - extract(dow from current_date)::int + 7) % 7))::date as this_wed
+), demo(weeks_back, hours) as (
+  values (11, 14), (10, 16), (9, 12), (8, 18), (7, 15), (6, 20),
+         (4, 17), (3, 22), (2, 19), (1, 24), (0, 21)
+)
+insert into dev.member_hours (member_id, week_ending, hours)
+select '44444444-4444-4444-8444-444444444444',
+       (a.this_wed - (d.weeks_back * 7)), d.hours
+from anchor a, demo d;
+
+-- ---------------------------------------------------------------------------
 -- 5. Notes, including two flagged to show on the graph
 -- ---------------------------------------------------------------------------
 
@@ -145,7 +228,17 @@ select 'stat', '55555555-5555-4555-8555-555555555555'::uuid,
 union all
 select 'hours', '11111111-1111-4111-8111-111111111111'::uuid,
        a.this_wed - 35, 'DEMO: unflagged note, table only.', false,
-       '11111111-1111-4111-8111-111111111111'::uuid from anchor a;
+       '11111111-1111-4111-8111-111111111111'::uuid from anchor a
+union all
+-- Flagged notes on the dev admin's stat + hours, so the 2d dashboard cards show
+-- note markers, not just lines.
+select 'stat', '66666666-6666-4666-8666-666666666666'::uuid,
+       a.this_wed - 49, 'DEMO: mailing list cleaned up — volume jumps here.', true,
+       '44444444-4444-4444-8444-444444444444'::uuid from anchor a
+union all
+select 'hours', '44444444-4444-4444-8444-444444444444'::uuid,
+       a.this_wed - 28, 'DEMO: took on the Div 1 post as well.', true,
+       '44444444-4444-4444-8444-444444444444'::uuid from anchor a;
 
 commit;
 

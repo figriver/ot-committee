@@ -42,6 +42,13 @@ type Props = {
   statId: string;
   basePath: string;
   page: number;
+  /**
+   * Show this chart's own Weekly/Monthly/Quarterly selector. The dashboard (2d)
+   * stacks many charts on one URL, where per-card selectors would all write the
+   * same `?scale=` and change every chart — so it renders ONE selector for the
+   * page and passes false here.
+   */
+  showControls?: boolean;
 };
 
 const RISING = '#111827'; // near-black ink
@@ -89,6 +96,7 @@ export function StatGraph({
   statId,
   basePath,
   page,
+  showControls = true,
 }: Props) {
   const svgRef = useRef<SVGSVGElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -196,19 +204,26 @@ export function StatGraph({
 
   return (
     <section className="gr-card">
-      <div className="gr-controls">
-        <div className="gr-scales" role="group" aria-label="Time scale">
-          {(['weekly', 'monthly', 'quarterly'] as Scale[]).map((s) => (
-            <Link
-              key={s}
-              href={scaleHref(s)}
-              className={`gr-scale${s === scale ? ' gr-scale-on' : ''}`}
-              aria-current={s === scale ? 'true' : undefined}
-            >
-              {s[0].toUpperCase() + s.slice(1)}
-            </Link>
-          ))}
-        </div>
+      {/* Skip the row entirely when it would be empty — an empty control bar
+          just adds dead space above a dashboard card. */}
+      <div
+        className="gr-controls"
+        hidden={!showControls && !(canSetRollup && scale !== 'weekly')}
+      >
+        {showControls && (
+          <div className="gr-scales" role="group" aria-label="Time scale">
+            {(['weekly', 'monthly', 'quarterly'] as Scale[]).map((s) => (
+              <Link
+                key={s}
+                href={scaleHref(s)}
+                className={`gr-scale${s === scale ? ' gr-scale-on' : ''}`}
+                aria-current={s === scale ? 'true' : undefined}
+              >
+                {s[0].toUpperCase() + s.slice(1)}
+              </Link>
+            ))}
+          </div>
+        )}
         {canSetRollup && scale !== 'weekly' && (
           <label className="gr-rollup">
             Roll up by
