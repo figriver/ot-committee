@@ -2527,3 +2527,163 @@ a {
     flex: 0 0 auto;
   }
 }
+
+/* ==========================================================================
+   Slice 2c — single-stat graph
+   ========================================================================== */
+.gr-card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 14px 14px 12px;
+  margin-bottom: 18px;
+}
+
+/* controls row: time scale + (editors only) the rollup rule */
+.gr-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.gr-scales {
+  display: inline-flex;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.gr-scale {
+  padding: 6px 12px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--muted);
+  background: var(--panel);
+  border-right: 1px solid var(--line-strong);
+}
+.gr-scale:last-child {
+  border-right: none;
+}
+.gr-scale:hover {
+  color: var(--ink);
+  background: #f9fafb;
+}
+.gr-scale-on,
+.gr-scale-on:hover {
+  color: #fff;
+  background: var(--accent);
+}
+.gr-rollup {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+.gr-select {
+  font: inherit;
+  font-size: 12.5px;
+  color: #111827;
+  background: #fff;
+  padding: 5px 8px;
+  border: 1px solid var(--line-strong);
+  border-radius: 7px;
+}
+
+/* plot */
+.gr-scroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+.gr-plotwrap {
+  position: relative;
+  width: 100%;
+}
+.gr-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  touch-action: pan-y;
+}
+.gr-empty {
+  color: var(--muted);
+  font-size: 13px;
+  margin: 8px 0 6px;
+}
+
+/* tooltip — floats above the plot, never gates a value (the table has them all) */
+.gr-tip {
+  position: absolute;
+  top: 6px;
+  transform: translateX(8px);
+  max-width: 230px;
+  padding: 7px 9px;
+  border-radius: 8px;
+  background: #111827;
+  color: #f9fafb;
+  font-size: 12px;
+  line-height: 1.35;
+  pointer-events: none;
+  z-index: 2;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+}
+.gr-tip-left {
+  transform: translateX(calc(-100% - 8px));
+}
+.gr-tip-val {
+  font-size: 15px;
+  font-weight: 700;
+}
+.gr-tip-head {
+  color: #d1d5db;
+  font-size: 11.5px;
+}
+.gr-tip-body {
+  margin-top: 3px;
+  white-space: pre-wrap;
+}
+
+/* legend: color carries meaning here, so it is always labeled */
+.gr-legend {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+  padding-top: 9px;
+  border-top: 1px solid var(--line);
+  font-size: 12px;
+  color: var(--muted);
+}
+.gr-key {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.gr-rollnote {
+  margin-left: auto;
+  font-style: italic;
+}
+
+@media (max-width: 639px) {
+  .gr-card {
+    padding: 12px 10px 10px;
+  }
+  /* Keep the plot at a legible size and let it scroll sideways rather than
+     squeezing 26 weeks into 360px. */
+  .gr-plotwrap {
+    min-width: 620px;
+  }
+  .gr-controls {
+    gap: 8px;
+  }
+  .gr-scale {
+    padding: 6px 10px;
+  }
+  .gr-rollnote {
+    margin-left: 0;
+    width: 100%;
+  }
+}

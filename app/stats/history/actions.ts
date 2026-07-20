@@ -147,6 +147,21 @@ export async function correctValue(
   revalidate();
 }
 
+/**
+ * Set how a stat rolls up to Monthly / Quarterly on the graph. Same permission
+ * as correcting it: you hold the post, or you are an admin.
+ */
+export async function setStatRollup(statId: string, rollup: string): Promise<void> {
+  await authorize('stat', statId);
+  if (!['sum', 'average', 'last'].includes(rollup)) {
+    throw new Error('Unknown rollup.');
+  }
+  const supa = getServiceClient();
+  const { error } = await supa.from('stats').update({ rollup }).eq('id', statId);
+  if (error) throw new Error(`setStatRollup: ${error.message}`);
+  revalidate();
+}
+
 // ---------------------------------------------------------------------------
 // Notes
 // ---------------------------------------------------------------------------

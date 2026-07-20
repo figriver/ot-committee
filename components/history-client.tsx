@@ -10,6 +10,8 @@ import {
   setNoteShowOnGraph,
 } from '@/app/stats/history/actions';
 import type { SubjectType } from '@/lib/history';
+import type { Scale, Rollup } from '@/lib/series';
+import { StatGraph, type GraphPoint, type GraphNote } from '@/components/stat-graph';
 
 // The value history of one subject (a stat, or a member's hours) as a table:
 // one row per reporting week, newest first, each value correctable in place.
@@ -47,6 +49,13 @@ type Props = {
   today: string; // ISO, server-computed (default date for a new note)
   rows: RowView[];
   notes: NoteView[];
+  // graph (2c) — same entries as the table, over a longer window
+  scale: Scale;
+  seriesPoints: GraphPoint[];
+  graphNotes: GraphNote[];
+  rollup: Rollup;
+  rollupNote: string;
+  canSetRollup: boolean;
 };
 
 function messageOf(e: unknown): string {
@@ -54,9 +63,11 @@ function messageOf(e: unknown): string {
 }
 
 export function HistoryClient(props: Props) {
-  const { tab, basePath, page } = props;
-  const tabHref = (t: 'values' | 'notes') =>
-    `${basePath}?tab=${t}${page ? `&page=${page}` : ''}`;
+  const { tab, basePath, page, scale } = props;
+  // Keep the reader's place: switching tabs preserves both the page and the
+  // graph's time scale.
+  const keep = `${page ? `&page=${page}` : ''}${scale !== 'weekly' ? `&scale=${scale}` : ''}`;
+  const tabHref = (t: 'values' | 'notes') => `${basePath}?tab=${t}${keep}`;
 
   return (
     <>
@@ -99,14 +110,34 @@ function ValuesTab({
   hasNewer,
   hasOlder,
   tab,
+  scale,
+  seriesPoints,
+  graphNotes,
+  rollup,
+  rollupNote,
+  canSetRollup,
 }: Props) {
   const [editingWeek, setEditingWeek] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const pageHref = (p: number) => `${basePath}?tab=${tab}${p ? `&page=${p}` : ''}`;
+  const pageHref = (p: number) =>
+    `${basePath}?tab=${tab}${p ? `&page=${p}` : ''}${scale !== 'weekly' ? `&scale=${scale}` : ''}`;
 
   return (
     <>
+      <StatGraph
+        unit={unit}
+        scale={scale}
+        points={seriesPoints}
+        notes={graphNotes}
+        rollup={rollup}
+        rollupNote={rollupNote}
+        canSetRollup={canSetRollup}
+        statId={subjectId}
+        basePath={basePath}
+        page={page}
+      />
+
       {!canEdit && (
         <p className="sh-note-readonly">
           You can view this history, but only the member who holds this post

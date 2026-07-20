@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { requireMember } from '@/lib/auth';
 import { getStatHistory, getHoursHistory, type SubjectType } from '@/lib/history';
+import { getSeries, asScale } from '@/lib/series';
 import { formatWeekEnding, formatDate } from '@/lib/week';
 import { AccountBar } from '@/components/account-bar';
 import { HistoryClient } from '@/components/history-client';
@@ -17,7 +18,7 @@ export default async function HistoryPage({
   searchParams,
 }: {
   params: Promise<{ subject: string; id: string }>;
-  searchParams: Promise<{ tab?: string; page?: string }>;
+  searchParams: Promise<{ tab?: string; page?: string; scale?: string }>;
 }) {
   const member = await requireMember();
   const { subject, id } = await params;
@@ -42,6 +43,16 @@ export default async function HistoryPage({
     value: r.value,
     updatedBy: r.updatedBy,
   }));
+  // The graph reads the same entries as the table, over its own (longer) window.
+  const scale = asScale(sp.scale);
+  const series = await getSeries(subjectType, id, scale, view.canEdit);
+  const graphNotes = series.notes.map((n) => ({
+    id: n.id,
+    date: n.date,
+    dateLabel: formatDate(n.date),
+    body: n.body,
+  }));
+
   const notes = view.notes.map((n) => ({
     id: n.id,
     noteDate: n.noteDate,
@@ -81,6 +92,12 @@ export default async function HistoryPage({
           today={today}
           rows={rows}
           notes={notes}
+          scale={scale}
+          seriesPoints={series.points}
+          graphNotes={graphNotes}
+          rollup={series.rollup}
+          rollupNote={series.rollupNote}
+          canSetRollup={series.canSetRollup}
         />
       </div>
     </>
