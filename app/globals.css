@@ -473,6 +473,13 @@ a {
   border: 1px solid #374151;
   min-width: 240px;
 }
+/* All exec-tier boxes share one height so their division GROUPS start at the same
+   Y — otherwise a shorter title (fewer lines) makes that exec's group sit higher
+   and its divisions drift up out of the shared baseline. Sized for a 2-line title. */
+.ob-exec.execsec,
+.ob-exec.ob-exec-orphan {
+  min-height: 70px;
+}
 .ob-exec.execsec {
   min-width: 220px;
   max-width: 320px;
