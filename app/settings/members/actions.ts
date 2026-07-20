@@ -1,5 +1,6 @@
 'use server';
 
+import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { requireAdmin } from '@/lib/auth';
 import { getServiceClient } from '@/lib/supabase/server';
@@ -8,6 +9,52 @@ import { sendMagicLink } from '@/lib/magic-link';
 export type InviteState = { ok: boolean; message: string };
 
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+
+/**
+ * Admin-only: promote a member to admin or demote an admin to member. Any admin
+ * may do this. Guardrail: never allow zero admins — demoting the LAST remaining
+ * admin is blocked (this also covers an admin trying to demote themselves when
+ * they're the only admin). Role takes effect on the target's next load, since
+ * every page reads role from the DB per request.
+ */
+export async function setMemberRole(formData: FormData): Promise<void> {
+  await requireAdmin(); // server-side gate (redirects non-admins)
+
+  const memberId = String(formData.get('member_id') ?? '');
+  const role = String(formData.get('role') ?? '');
+  if (!memberId || (role !== 'admin' && role !== 'member')) {
+    redirect('/settings/members?error=bad');
+  }
+
+  const svc = getServiceClient();
+  const { data: target } = await svc
+    .from('members')
+    .select('id, role')
+    .eq('id', memberId)
+    .maybeSingle();
+  if (!target) redirect('/settings/members?error=notfound');
+  if (target.role === role) redirect('/settings/members'); // no-op
+
+  // Never allow zero admins: block demoting the last admin.
+  if (target.role === 'admin' && role === 'member') {
+    const { count } = await svc
+      .from('members')
+      .select('id', { count: 'exact', head: true })
+      .eq('role', 'admin');
+    if ((count ?? 0) <= 1) {
+      redirect('/settings/members?error=last_admin');
+    }
+  }
+
+  const { error } = await svc
+    .from('members')
+    .update({ role })
+    .eq('id', memberId);
+  if (error) redirect('/settings/members?error=save');
+
+  revalidatePath('/settings/members');
+  redirect(`/settings/members?role=${role}`);
+}
 
 /**
  * Admin-only: add an email to the allowlist as a member and send its magic link.

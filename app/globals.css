@@ -1231,6 +1231,63 @@ a {
   font-style: italic;
   text-align: center;
 }
+.m-you {
+  margin-left: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--accent);
+}
+.m-roleform {
+  margin: 0;
+}
+.m-rolebtn {
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  background: #fff;
+  border: 1px solid var(--line-strong);
+  color: var(--ink);
+}
+.m-rolebtn.promote {
+  color: #5b21b6;
+  border-color: #ddd6fe;
+}
+.m-rolebtn.promote:hover {
+  background: #f5f3ff;
+}
+.m-rolebtn.demote {
+  color: #374151;
+}
+.m-rolebtn.demote:hover:not(:disabled) {
+  background: #f3f4f6;
+}
+.m-rolebtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.members-ok {
+  margin-bottom: 14px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  color: #065f46;
+  font-size: 13px;
+}
+.members-err {
+  margin-bottom: 14px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: var(--danger);
+  font-size: 13px;
+}
 
 /* ==========================================================================
    Responsive — mobile drawer board + single-column forms (< 640px)
