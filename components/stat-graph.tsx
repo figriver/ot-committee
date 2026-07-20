@@ -60,6 +60,11 @@ const AXIS_TEXT = '#6b7280';
 const PAD = { top: 18, right: 18, bottom: 30, left: 46 };
 const H = 250;
 
+// Two reported periods are the fewest that can draw a segment. Below that the
+// chart is a lone dot (or nothing), so it gets an explanatory note instead of
+// looking broken.
+const MIN_FOR_LINE = 2;
+
 /** Axis ticks on clean numbers (0 / 25 / 50), ~4 of them. */
 function niceTicks(min: number, max: number, count = 4): number[] {
   const span = max - min || Math.abs(max) || 1;
@@ -248,8 +253,11 @@ export function StatGraph({
 
       {reported.length === 0 ? (
         <p className="gr-empty">
-          Nothing reported in this window yet — once a few periods have values,
-          the line appears here.
+          <strong>No data yet.</strong> Report a value on the{' '}
+          <Link href="/stats" className="gr-emptylink">
+            Stats page
+          </Link>{' '}
+          and this graph starts filling in.
         </p>
       ) : (
         <>
@@ -444,19 +452,36 @@ export function StatGraph({
             </div>
           </div>
 
+          {/* A single reported period draws a lone dot and no line, which reads
+              as a broken chart rather than as a chart waiting for data. Say so —
+              and say it only while it is TRUE: two points already make a line, so
+              this never claims "no line yet" with a line on screen. */}
+          {reported.length < MIN_FOR_LINE && (
+            <p className="gr-sparse">
+              <strong>First period logged.</strong> One more and the trend line
+              appears — keep reporting each week.
+            </p>
+          )}
+
           <div className="gr-legend">
-            <span className="gr-key">
-              <svg width="18" height="8" aria-hidden="true">
-                <line x1="1" y1="4" x2="17" y2="4" stroke={RISING} strokeWidth="2" />
-              </svg>
-              Rising or level
-            </span>
-            <span className="gr-key">
-              <svg width="18" height="8" aria-hidden="true">
-                <line x1="1" y1="4" x2="17" y2="4" stroke={FALLING} strokeWidth="2" />
-              </svg>
-              Down from previous
-            </span>
+            {/* Direction keys explain the line's colouring; with no line drawn
+                they describe marks that are not on screen. */}
+            {segments.length > 0 && (
+              <>
+                <span className="gr-key">
+                  <svg width="18" height="8" aria-hidden="true">
+                    <line x1="1" y1="4" x2="17" y2="4" stroke={RISING} strokeWidth="2" />
+                  </svg>
+                  Rising or level
+                </span>
+                <span className="gr-key">
+                  <svg width="18" height="8" aria-hidden="true">
+                    <line x1="1" y1="4" x2="17" y2="4" stroke={FALLING} strokeWidth="2" />
+                  </svg>
+                  Down from previous
+                </span>
+              </>
+            )}
             {noteMarks.length > 0 && (
               <span className="gr-key">
                 <svg width="18" height="10" aria-hidden="true">

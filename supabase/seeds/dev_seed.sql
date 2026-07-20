@@ -211,6 +211,37 @@ select '44444444-4444-4444-8444-444444444444',
 from anchor a, demo d;
 
 -- ---------------------------------------------------------------------------
+-- 4c. Sparse-data fixtures: a brand-new stat with NO weeks reported, and one
+--     with exactly ONE week. Both are on the dev admin's post so they appear on
+--     the dashboard, and they are what the "not enough data yet" states are
+--     tested against — a lone dot must read as waiting for data, not broken.
+-- ---------------------------------------------------------------------------
+
+insert into dev.stats (id, post_id, name, active, rollup)
+select '88888888-8888-4888-8888-888888888888', p.id, 'Brand New Stat (no data)', true, 'sum'
+from dev.posts p
+join dev.divisions v on v.id = p.division_id
+where v.number = 4
+limit 1;
+
+insert into dev.stats (id, post_id, name, active, rollup)
+select '99999999-9999-4999-8999-999999999999', p.id, 'Just Started (one week)', true, 'sum'
+from dev.posts p
+join dev.divisions v on v.id = p.division_id
+where v.number = 4
+limit 1;
+
+-- Exactly one reported week for the second one. (The first gets no entries at all.)
+with anchor as (
+  select (current_date + ((3 - extract(dow from current_date)::int + 7) % 7))::date as this_wed
+)
+insert into dev.stat_entries (stat_id, member_id, week_ending, value)
+select '99999999-9999-4999-8999-999999999999',
+       '44444444-4444-4444-8444-444444444444',
+       a.this_wed, 7
+from anchor a;
+
+-- ---------------------------------------------------------------------------
 -- 5. Notes, including two flagged to show on the graph
 -- ---------------------------------------------------------------------------
 

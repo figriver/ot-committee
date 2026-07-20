@@ -64,7 +64,15 @@ export default async function DashboardPage({
 
         <div className="db-grid">
           {cards.map((c) => (
-            <section key={c.key} className="db-card">
+            // A card with no plot holds one line of text. Left to stretch (which
+            // is what keeps chart cards' plots aligned) it matches the tall chart
+            // beside it and becomes a large empty box — so it sizes to content.
+            <section
+              key={c.key}
+              className={`db-card${
+                c.series.points.some((p) => p.value != null) ? '' : ' db-card-nodata'
+              }`}
+            >
               <div className="db-cardhead">
                 <div className="db-cardtitle">
                   <h2>{c.title}</h2>

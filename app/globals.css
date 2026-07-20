@@ -2611,6 +2611,33 @@ a {
   color: var(--muted);
   font-size: 13px;
   margin: 8px 0 6px;
+  padding: 14px 14px;
+  background: var(--bg);
+  border: 1px dashed var(--line-strong);
+  border-radius: 10px;
+  line-height: 1.5;
+}
+.gr-empty strong,
+.gr-sparse strong {
+  color: var(--ink);
+  font-weight: 700;
+}
+.gr-emptylink {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* Sparse-data note: a chart with one point is waiting for data, not broken.
+   Sits under the plot so it supplements the dot rather than replacing it. */
+.gr-sparse {
+  margin: 2px 0 8px;
+  padding: 9px 11px;
+  background: var(--bg);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 8px 8px 0;
+  color: var(--muted);
+  font-size: 12.5px;
+  line-height: 1.5;
 }
 
 /* tooltip — floats above the plot, never gates a value (the table has them all) */
@@ -2749,6 +2776,10 @@ a {
   border: 1px solid var(--line);
   border-radius: 12px;
   padding: 14px 14px 6px;
+}
+/* Nothing to plot: size to content instead of stretching to the row height. */
+.db-card-nodata {
+  align-self: start;
 }
 /* The chart already draws its own card; inside a dashboard card it is just the
    plot, so strip the doubled frame. */
