@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { getCurrentMember } from '@/lib/auth';
 import { getServiceClient } from '@/lib/supabase/server';
 import { isWeekEnding } from '@/lib/week';
+import { assertWeekOpen } from '@/lib/lock';
 
 /**
  * Save the current member's weekly report: their Hours (once) + a value for each
@@ -18,6 +19,19 @@ export async function submitReport(formData: FormData): Promise<void> {
 
   const weekEnding = String(formData.get('week_ending') ?? '');
   if (!isWeekEnding(weekEnding)) redirect('/stats');
+
+  // The lock is enforced HERE, before anything is saved — the form is rendered
+  // read-only for a closed week, but that is only cosmetic; this is what stops a
+  // stale tab or a hand-rolled POST. Closed means closed for everyone on this
+  // path, admins included: an override has to be the attributed, one-value
+  // correction on the History page, not a silent bulk re-submit.
+  let weekOpen = true;
+  try {
+    await assertWeekOpen(weekEnding);
+  } catch {
+    weekOpen = false;
+  }
+  if (!weekOpen) redirect(`/stats?week=${weekEnding}&error=locked`);
 
   const supa = getServiceClient();
   const now = new Date().toISOString();

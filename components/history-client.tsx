@@ -23,6 +23,7 @@ export type RowView = {
   label: string; // pre-formatted for display
   value: string | null; // null = not reported
   updatedBy: string | null;
+  locked: boolean; // the week closed — read-only except to an admin (override)
 };
 
 export type NoteView = {
@@ -56,6 +57,7 @@ type Props = {
   rollup: Rollup;
   rollupNote: string;
   canSetRollup: boolean;
+  lockLabel: string; // e.g. "Wednesday 11:59 PM (America/Chicago)"
 };
 
 function messageOf(e: unknown): string {
@@ -116,6 +118,8 @@ function ValuesTab({
   rollup,
   rollupNote,
   canSetRollup,
+  isAdmin,
+  lockLabel,
 }: Props) {
   const [editingWeek, setEditingWeek] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -145,6 +149,10 @@ function ValuesTab({
           admin — can correct it.
         </p>
       )}
+      <p className="sh-locknote">
+        Weeks close {lockLabel}. A closed week is read-only
+        {isAdmin ? ' — as an admin you can still override a locked week, and it records you as the editor.' : '.'}
+      </p>
       {error && <div className="sh-err">{error}</div>}
 
       <table className="sh-table">
@@ -165,6 +173,7 @@ function ValuesTab({
               row={r}
               unit={unit}
               canEdit={canEdit}
+              isAdmin={isAdmin}
               editing={editingWeek === r.weekEnding}
               onEdit={() => {
                 setError(null);
@@ -206,6 +215,7 @@ function ValueRow({
   row,
   unit,
   canEdit,
+  isAdmin,
   editing,
   onEdit,
   onDone,
@@ -216,6 +226,7 @@ function ValueRow({
   row: RowView;
   unit: string;
   canEdit: boolean;
+  isAdmin: boolean;
   editing: boolean;
   onEdit: () => void;
   onDone: () => void;
@@ -316,14 +327,24 @@ function ValueRow({
               Cancel
             </button>
           </span>
+        ) : row.locked && !(canEdit && isAdmin) ? (
+          // Closed week, no override right: say WHY there is no control here.
+          <span className="sh-lockchip" title="This week is closed">
+            Locked
+          </span>
         ) : canEdit ? (
           <button
             type="button"
-            className="sh-linkbtn"
+            className={`sh-linkbtn${row.locked ? ' sh-override' : ''}`}
             onClick={onEdit}
-            aria-label={`Correct week ending ${row.label}`}
+            aria-label={
+              row.locked
+                ? `Override locked week ending ${row.label}`
+                : `Correct week ending ${row.label}`
+            }
+            title={row.locked ? 'This week is closed — editing it is an admin override' : undefined}
           >
-            {row.value == null ? 'Fill in' : 'Correct'}
+            {row.locked ? 'Override' : row.value == null ? 'Fill in' : 'Correct'}
           </button>
         ) : null}
       </td>

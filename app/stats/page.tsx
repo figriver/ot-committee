@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { requireMember } from '@/lib/auth';
 import { getMemberReport } from '@/lib/stats';
 import { resolveWeekEnding, addDaysISO, formatWeekEnding } from '@/lib/week';
+import { getLockConfig, isLockedAt, describeLock } from '@/lib/lock';
 import { AccountBar } from '@/components/account-bar';
 import { submitReport } from './actions';
 
@@ -10,7 +11,7 @@ export const dynamic = 'force-dynamic';
 export default async function ReportPage({
   searchParams,
 }: {
-  searchParams: Promise<{ week?: string; saved?: string }>;
+  searchParams: Promise<{ week?: string; saved?: string; error?: string }>;
 }) {
   const member = await requireMember();
   const sp = await searchParams;
@@ -20,6 +21,12 @@ export default async function ReportPage({
   const nextWeek = addDaysISO(weekEnding, 7);
   const report = await getMemberReport(member.id, weekEnding);
   const hasStats = report.posts.some((p) => p.stats.length > 0);
+
+  // A closed week is read-only here for everyone — including admins. An admin's
+  // override belongs on the History page, where it is an explicit, attributed
+  // correction rather than a silent re-submit of the whole report form.
+  const lockCfg = await getLockConfig();
+  const locked = isLockedAt(weekEnding, lockCfg);
 
   return (
     <>
@@ -48,6 +55,20 @@ export default async function ReportPage({
         </div>
 
         {sp.saved && <div className="rpt-ok">Saved.</div>}
+        {sp.error === 'locked' && (
+          <div className="rpt-err">
+            That week has closed — nothing was saved.
+          </div>
+        )}
+        {locked && (
+          <div className="rpt-locked">
+            <strong>This week is closed.</strong> Weeks lock {describeLock(lockCfg)},
+            after which reports are read-only.{' '}
+            {member.role === 'admin'
+              ? 'As an admin you can still correct it from the History page — that is recorded as an override.'
+              : 'If something needs correcting, ask an admin.'}
+          </div>
+        )}
 
         {/* key on the week so inputs reset to the selected week's saved values */}
         <form action={submitReport} className="rpt-form" key={weekEnding}>
@@ -73,6 +94,8 @@ export default async function ReportPage({
               placeholder="e.g. 40"
               className="rpt-input"
               defaultValue={report.hours ?? ''}
+              readOnly={locked}
+              disabled={locked}
             />
           </section>
 
@@ -115,6 +138,8 @@ export default async function ReportPage({
                         placeholder="value"
                         className="rpt-input"
                         defaultValue={s.value ?? ''}
+                        readOnly={locked}
+                        disabled={locked}
                       />
                     </div>
                   ))}
@@ -122,9 +147,11 @@ export default async function ReportPage({
               ))
           )}
 
-          <button type="submit" className="rpt-btn">
-            Save report
-          </button>
+          {!locked && (
+            <button type="submit" className="rpt-btn">
+              Save report
+            </button>
+          )}
         </form>
       </div>
     </>

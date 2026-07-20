@@ -6,6 +6,7 @@ import { getCurrentMember } from '@/lib/auth';
 import { getServiceClient } from '@/lib/supabase/server';
 import { canEditSubject, type SubjectType } from '@/lib/history';
 import { isWeekEnding } from '@/lib/week';
+import { assertWeekWritable } from '@/lib/lock';
 import type { Member } from '@/lib/types';
 
 function revalidate() {
@@ -57,6 +58,10 @@ export async function correctValue(
   const subjectType = asSubjectType(subjectTypeRaw);
   const member = await authorize(subjectType, subjectId);
   if (!isWeekEnding(weekEnding)) throw new Error('Bad week.');
+  // A locked week is read-only. Admins may still correct it — that is the
+  // override — and updated_by below records who did. Enforced HERE, server-side:
+  // the UI hides the control, but this is what actually stops the write.
+  await assertWeekWritable(member, weekEnding);
 
   const trimmed = raw.trim();
   const clearing = trimmed === '';

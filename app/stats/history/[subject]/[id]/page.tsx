@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { requireMember } from '@/lib/auth';
 import { getStatHistory, getHoursHistory, type SubjectType } from '@/lib/history';
 import { getSeries, asScale } from '@/lib/series';
+import { getLockConfig, isLockedAt, describeLock } from '@/lib/lock';
 import { formatWeekEnding, formatDate } from '@/lib/week';
 import { AccountBar } from '@/components/account-bar';
 import { HistoryClient } from '@/components/history-client';
@@ -37,11 +38,15 @@ export default async function HistoryPage({
   if (!view) notFound();
 
   // Dates are formatted server-side so the client renders the same strings.
+  // Lock config is read ONCE and applied per row — a page shows 12 weeks, and
+  // each one closes on its own schedule.
+  const lockCfg = await getLockConfig();
   const rows = view.rows.map((r) => ({
     weekEnding: r.weekEnding,
     label: formatWeekEnding(r.weekEnding),
     value: r.value,
     updatedBy: r.updatedBy,
+    locked: isLockedAt(r.weekEnding, lockCfg),
   }));
   // The graph reads the same entries as the table, over its own (longer) window.
   const scale = asScale(sp.scale);
@@ -98,6 +103,7 @@ export default async function HistoryPage({
           rollup={series.rollup}
           rollupNote={series.rollupNote}
           canSetRollup={series.canSetRollup}
+          lockLabel={describeLock(lockCfg)}
         />
       </div>
     </>

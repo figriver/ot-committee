@@ -20,6 +20,11 @@ export default async function SettingsPage() {
       title: 'Manage Stats',
       desc: 'Create and manage the named production stats on each post.',
     },
+    {
+      href: '/settings/collection',
+      title: 'Collection',
+      desc: 'See who has reported for a week and chase up the ones who have not.',
+    },
   ];
 
   return (
