@@ -25,13 +25,10 @@ export function AccountBar({
         <Link href="/board" className="acct-link">
           Org Board
         </Link>
+        {/* One Stats top-level → My Stats (the personal dashboard). The three
+            stats surfaces (My Stats / Enter / Committee) switch from the
+            sub-nav on each screen, not from here. */}
         <Link href="/dashboard" className="acct-link">
-          My Dashboard
-        </Link>
-        <Link href="/committee" className="acct-link">
-          Committee
-        </Link>
-        <Link href="/stats" className="acct-link">
           Stats
         </Link>
         {isAdmin && (

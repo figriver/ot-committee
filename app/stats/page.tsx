@@ -7,6 +7,7 @@ import { getLockConfig, isLockedAt, describeLock } from '@/lib/lock';
 import { AccountBar } from '@/components/account-bar';
 import { submitReport } from './actions';
 import { AdjustableEntryCard } from '@/components/adjustable-entry';
+import { StatsSubNav } from '@/components/stats-subnav';
 
 export const dynamic = 'force-dynamic';
 
@@ -51,11 +52,12 @@ export default async function ReportPage({
   return (
     <>
       <AccountBar email={member.email} isAdmin={member.role === 'admin'} />
+      <StatsSubNav active="enter" />
       <div className="rpt-wrap">
         <div className="rpt-head">
           <h1>Stats</h1>
           <Link href="/dashboard" className="rpt-back">
-            My Dashboard →
+            My Stats →
           </Link>
         </div>
         <p className="rpt-sub">

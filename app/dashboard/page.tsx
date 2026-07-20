@@ -5,6 +5,8 @@ import { asScale, SCALES, type Scale } from '@/lib/series';
 import { formatDate } from '@/lib/week';
 import { AccountBar } from '@/components/account-bar';
 import { StatGraph } from '@/components/stat-graph';
+import { StatsSubNav } from '@/components/stats-subnav';
+import { CardControls } from '@/components/card-controls';
 
 export const dynamic = 'force-dynamic';
 
@@ -43,10 +45,11 @@ export default async function DashboardPage({
   return (
     <>
       <AccountBar email={member.email} isAdmin={member.role === 'admin'} />
+      <StatsSubNav active="my" />
       <div className="db-wrap">
         <div className="db-head">
           <div>
-            <h1>My Dashboard</h1>
+            <h1>My Stats</h1>
             <p className="db-sub">
               {statCount > 0
                 ? `Your hours and ${statCount} stat${statCount === 1 ? '' : 's'} you are responsible for` +
@@ -58,7 +61,7 @@ export default async function DashboardPage({
             </p>
           </div>
           <Link href="/stats" className="db-report">
-            Report this week →
+            Enter a report →
           </Link>
         </div>
 
@@ -115,6 +118,12 @@ export default async function DashboardPage({
                 basePath="/dashboard"
                 page={0}
                 showControls={false}
+              />
+              <CardControls
+                subjectType={c.subjectType}
+                subjectId={c.subjectId}
+                title={c.title}
+                entry={c.entry}
               />
             </section>
           ))}

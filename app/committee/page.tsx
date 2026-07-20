@@ -5,6 +5,7 @@ import { getStatSeriesBatch, asScale, SCALES, type Scale } from '@/lib/series';
 import { formatDate } from '@/lib/week';
 import { AccountBar } from '@/components/account-bar';
 import { CommitteeBoard, type CommitteeGroup } from '@/components/committee-client';
+import { StatsSubNav } from '@/components/stats-subnav';
 
 export const dynamic = 'force-dynamic';
 
@@ -79,6 +80,7 @@ export default async function CommitteePage({
   return (
     <>
       <AccountBar email={member.email} isAdmin={member.role === 'admin'} />
+      <StatsSubNav active="committee" />
       <div className="cm-wrap">
         <div className="cm-head">
           <div>
@@ -89,7 +91,7 @@ export default async function CommitteePage({
             </p>
           </div>
           <Link href="/dashboard" className="cm-mine">
-            My Dashboard →
+            My Stats →
           </Link>
         </div>
 
