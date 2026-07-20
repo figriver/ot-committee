@@ -1056,6 +1056,11 @@ a {
   font-weight: 700;
   letter-spacing: 0.01em;
 }
+.acct-nav {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
 .acct-email {
   color: #cbd5e1;
   max-width: 40vw;
@@ -1434,6 +1439,14 @@ a {
   .acct-brand {
     display: none;
   }
+  /* nav on its own row, account info on the next */
+  .acct-nav {
+    flex: 1 1 100%;
+    gap: 18px;
+  }
+  .acct-spacer {
+    display: none;
+  }
   .acct-email {
     max-width: 55vw;
   }
@@ -1772,5 +1785,77 @@ a {
   }
   .rpt-weeklabel {
     font-size: 12.5px;
+  }
+}
+
+/* ==========================================================================
+   Settings landing + member Stats subtitle (nav restructure)
+   ========================================================================== */
+.rpt-sub {
+  color: var(--muted);
+  font-size: 13px;
+  margin: 6px 0 4px;
+}
+
+.set-wrap {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 24px 20px 64px;
+}
+.set-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.set-head h1 {
+  font-size: 22px;
+  margin: 0;
+}
+.set-back {
+  color: var(--accent);
+  font-size: 13px;
+}
+.set-intro {
+  color: var(--muted);
+  font-size: 13px;
+  margin: 6px 0 18px;
+}
+.set-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
+}
+.set-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 16px;
+  transition: box-shadow 0.15s, transform 0.15s, border-color 0.15s;
+}
+.set-card:hover {
+  border-color: var(--line-strong);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.07);
+  transform: translateY(-1px);
+}
+.set-card-title {
+  font-weight: 700;
+  font-size: 15.5px;
+  color: var(--ink);
+}
+.set-card-desc {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.4;
+}
+@media (max-width: 639px) {
+  .set-wrap {
+    padding: 18px 14px 48px;
+  }
+  .set-grid {
+    grid-template-columns: 1fr;
   }
 }

@@ -24,8 +24,8 @@ export default async function MembersPage() {
       <div className="members-wrap">
         <div className="members-head">
           <h1>Members</h1>
-          <Link href="/board" className="members-back">
-            ← Board
+          <Link href="/settings" className="members-back">
+            ← Settings
           </Link>
         </div>
 

@@ -1,108 +1,119 @@
 import Link from 'next/link';
-import { requireAdmin } from '@/lib/auth';
-import { getPostsForPicker, getStatsWithContext } from '@/lib/stats';
+import { requireMember } from '@/lib/auth';
+import { getMemberReport } from '@/lib/stats';
+import { resolveWeekEnding, addDaysISO, formatWeekEnding } from '@/lib/week';
 import { AccountBar } from '@/components/account-bar';
-import { createStat } from './actions';
+import { submitReport } from './actions';
 
 export const dynamic = 'force-dynamic';
 
-export default async function StatsPage({
+export default async function ReportPage({
   searchParams,
 }: {
-  searchParams: Promise<{ created?: string; error?: string }>;
+  searchParams: Promise<{ week?: string; saved?: string }>;
 }) {
-  const admin = await requireAdmin();
+  const member = await requireMember();
   const sp = await searchParams;
-  const [posts, stats] = await Promise.all([
-    getPostsForPicker(),
-    getStatsWithContext(),
-  ]);
 
-  // group stats by post label for display
-  const byPost = new Map<string, { label: string; names: string[] }>();
-  for (const s of stats) {
-    const g = byPost.get(s.postId) ?? { label: s.postLabel, names: [] };
-    g.names.push(s.name);
-    byPost.set(s.postId, g);
-  }
+  const weekEnding = await resolveWeekEnding(sp.week);
+  const prevWeek = addDaysISO(weekEnding, -7);
+  const nextWeek = addDaysISO(weekEnding, 7);
+  const report = await getMemberReport(member.id, weekEnding);
+  const hasStats = report.posts.some((p) => p.stats.length > 0);
 
   return (
     <>
-      <AccountBar email={admin.email} isAdmin />
-      <div className="stx-wrap">
-        <div className="stx-head">
+      <AccountBar email={member.email} isAdmin={member.role === 'admin'} />
+      <div className="rpt-wrap">
+        <div className="rpt-head">
           <h1>Stats</h1>
-          <Link href="/board" className="stx-back">
+          <Link href="/board" className="rpt-back">
             ← Board
           </Link>
         </div>
-        <p className="stx-intro">
-          Create a named production stat and attach it to a post. Whoever holds
-          that post reports it each week. Hours is reported separately, per member.
+        <p className="rpt-sub">
+          Enter and review your own hours and post stats, week by week.
         </p>
 
-        {sp.created && (
-          <div className="stx-ok">Stat created.</div>
-        )}
-        {sp.error && (
-          <div className="stx-err">
-            {sp.error === 'missing'
-              ? 'Pick a post and enter a stat name.'
-              : 'Could not create the stat. Try again.'}
+        <div className="rpt-weeknav">
+          <Link href={`/stats?week=${prevWeek}`} className="rpt-weekbtn">
+            ‹ Prev
+          </Link>
+          <div className="rpt-weeklabel">
+            Week ending <strong>{formatWeekEnding(weekEnding)}</strong>
           </div>
-        )}
+          <Link href={`/stats?week=${nextWeek}`} className="rpt-weekbtn">
+            Next ›
+          </Link>
+        </div>
 
-        <form action={createStat} className="stx-form">
-          <label className="stx-label" htmlFor="post_id">
-            Post
-          </label>
-          <select id="post_id" name="post_id" required className="stx-select" defaultValue="">
-            <option value="" disabled>
-              Choose a post…
-            </option>
-            {posts.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.label}
-              </option>
-            ))}
-          </select>
+        {sp.saved && <div className="rpt-ok">Saved.</div>}
 
-          <label className="stx-label" htmlFor="name">
-            Stat name
-          </label>
-          <input
-            id="name"
-            name="name"
-            type="text"
-            required
-            placeholder="e.g. Bodies in the shop"
-            className="stx-input"
-          />
+        {/* key on the week so inputs reset to the selected week's saved values */}
+        <form action={submitReport} className="rpt-form" key={weekEnding}>
+          <input type="hidden" name="week_ending" value={weekEnding} />
 
-          <button type="submit" className="stx-btn">
-            Create stat
+          <section className="rpt-section">
+            <label className="rpt-label" htmlFor="hours">
+              Hours <span className="rpt-hint">(you, this week — once)</span>
+            </label>
+            <input
+              id="hours"
+              name="hours"
+              type="number"
+              step="any"
+              min="0"
+              inputMode="decimal"
+              placeholder="e.g. 40"
+              className="rpt-input"
+              defaultValue={report.hours ?? ''}
+            />
+          </section>
+
+          {report.posts.length === 0 ? (
+            <p className="rpt-empty">
+              You don’t hold any posts yet, so there are no named stats to report
+              — just your Hours above. (An admin links you to a post on the board.)
+            </p>
+          ) : !hasStats ? (
+            <p className="rpt-empty">
+              No named stats on your post(s) yet — just your Hours above. An admin
+              can add stats under Settings → Manage Stats.
+            </p>
+          ) : (
+            report.posts
+              .filter((p) => p.stats.length > 0)
+              .map((p) => (
+                <section key={p.postId} className="rpt-section">
+                  <div className="rpt-post">
+                    <span className="rpt-post-dept">{p.deptName}</span>
+                    <span className="rpt-post-title">{p.title}</span>
+                  </div>
+                  {p.stats.map((s) => (
+                    <div key={s.statId} className="rpt-stat">
+                      <label className="rpt-stat-label" htmlFor={`stat_${s.statId}`}>
+                        {s.name}
+                      </label>
+                      <input
+                        id={`stat_${s.statId}`}
+                        name={`stat_${s.statId}`}
+                        type="number"
+                        step="any"
+                        inputMode="decimal"
+                        placeholder="value"
+                        className="rpt-input"
+                        defaultValue={s.value ?? ''}
+                      />
+                    </div>
+                  ))}
+                </section>
+              ))
+          )}
+
+          <button type="submit" className="rpt-btn">
+            Save report
           </button>
         </form>
-
-        <h2 className="stx-subhead">Existing stats</h2>
-        {byPost.size === 0 ? (
-          <p className="stx-empty">No stats yet.</p>
-        ) : (
-          <ul className="stx-list">
-            {[...byPost.values()].map((g) => (
-              <li key={g.label} className="stx-list-item">
-                <div className="stx-list-post">{g.label}</div>
-                <div className="stx-list-stats">
-                  {g.names.map((n, i) => (
-                    <span key={i} className="stx-chip">
-                      {n}
-                    </span>
-                  ))}
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
       </div>
     </>
   );

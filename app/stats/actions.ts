@@ -1,32 +1,82 @@
 'use server';
 
 import { redirect } from 'next/navigation';
-import { revalidatePath } from 'next/cache';
-import { requireAdmin } from '@/lib/auth';
+import { getCurrentMember } from '@/lib/auth';
 import { getServiceClient } from '@/lib/supabase/server';
+import { isWeekEnding } from '@/lib/week';
 
-/** Admin: create a named stat attached to a post. */
-export async function createStat(formData: FormData): Promise<void> {
-  await requireAdmin();
+/**
+ * Save the current member's weekly report: their Hours (once) + a value for each
+ * named stat on a post they hold, for the given week. Upserts, so re-saving
+ * updates. member_id always comes from the session — never the client.
+ *
+ * Field convention: `hours`, and `stat_<statId>` for each stat.
+ */
+export async function submitReport(formData: FormData): Promise<void> {
+  const member = await getCurrentMember();
+  if (!member) redirect('/login');
 
-  const postId = String(formData.get('post_id') ?? '');
-  const name = String(formData.get('name') ?? '').trim();
-  if (!postId || !name) redirect('/stats?error=missing');
+  const weekEnding = String(formData.get('week_ending') ?? '');
+  if (!isWeekEnding(weekEnding)) redirect('/stats');
 
   const supa = getServiceClient();
-  const { data: post } = await supa
-    .from('posts')
-    .select('id')
-    .eq('id', postId)
-    .maybeSingle();
-  if (!post) redirect('/stats?error=post');
+  const now = new Date().toISOString();
 
-  const { error } = await supa
-    .from('stats')
-    .insert({ post_id: postId, name, active: true });
-  if (error) redirect('/stats?error=save');
+  // --- Hours (universal, keyed to the member) ---
+  const hoursRaw = String(formData.get('hours') ?? '').trim();
+  if (hoursRaw !== '') {
+    const hours = Number(hoursRaw);
+    if (!Number.isNaN(hours)) {
+      await supa.from('member_hours').upsert(
+        { member_id: member.id, week_ending: weekEnding, hours, updated_at: now },
+        { onConflict: 'member_id,week_ending' },
+      );
+    }
+  }
 
-  revalidatePath('/stats');
-  revalidatePath('/report');
-  redirect('/stats?created=1');
+  // --- Named stats (only for posts the member actually holds) ---
+  const submitted: { statId: string; value: number }[] = [];
+  for (const [key, raw] of formData.entries()) {
+    if (typeof raw !== 'string' || !key.startsWith('stat_')) continue;
+    const v = raw.trim();
+    if (v === '') continue;
+    const num = Number(v);
+    if (Number.isNaN(num)) continue;
+    submitted.push({ statId: key.slice('stat_'.length), value: num });
+  }
+
+  if (submitted.length > 0) {
+    const { data: holders } = await supa
+      .from('post_holders')
+      .select('post_id')
+      .eq('member_id', member.id);
+    const held = new Set((holders ?? []).map((h) => h.post_id));
+
+    const { data: stats } = await supa
+      .from('stats')
+      .select('id, post_id')
+      .in(
+        'id',
+        submitted.map((s) => s.statId),
+      );
+    const postByStat = new Map((stats ?? []).map((s) => [s.id, s.post_id]));
+
+    const rows = submitted
+      .filter((s) => held.has(postByStat.get(s.statId)!))
+      .map((s) => ({
+        stat_id: s.statId,
+        member_id: member.id,
+        week_ending: weekEnding,
+        value: s.value,
+        updated_at: now,
+      }));
+
+    if (rows.length > 0) {
+      await supa
+        .from('stat_entries')
+        .upsert(rows, { onConflict: 'stat_id,member_id,week_ending' });
+    }
+  }
+
+  redirect(`/stats?week=${weekEnding}&saved=1`);
 }

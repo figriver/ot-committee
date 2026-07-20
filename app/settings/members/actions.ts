@@ -55,7 +55,7 @@ export async function inviteMember(
   } catch {
     emailed = false;
   }
-  revalidatePath('/members');
+  revalidatePath('/settings/members');
   return {
     ok: true,
     message: emailed
