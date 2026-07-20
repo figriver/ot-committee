@@ -185,6 +185,118 @@ async function weeklyValues(
   return out;
 }
 
+/**
+ * Fill `points` from weekly values and package the view. Shared by the single
+ * and batched paths so the bucketing rule cannot drift between the history page
+ * and the dashboards.
+ */
+function assembleSeries(
+  points: SeriesPoint[],
+  weekly: Map<string, number>,
+  notes: GraphNote[],
+  rollup: Rollup,
+  scale: Scale,
+  subjectType: SubjectType,
+  canEdit: boolean,
+): SeriesView {
+  const weeks = [...weekly.keys()].sort(); // oldest first, so 'last' means last
+  for (const p of points) {
+    const inBucket = weeks.filter((w) => w >= p.start && w <= p.end);
+    if (inBucket.length === 0) continue; // stays null → NR, line breaks
+    p.value = reduce(
+      inBucket.map((w) => weekly.get(w)!),
+      scale === 'weekly' ? 'last' : rollup, // weekly is native: one week, one value
+    );
+  }
+  return {
+    scale,
+    rollup,
+    rollupNote: rollupNoteFor(scale, rollup),
+    points,
+    notes,
+    canSetRollup: canEdit && subjectType === 'stat',
+  };
+}
+
+/**
+ * Series for MANY stats at once, in a fixed number of queries rather than three
+ * per stat. The committee dashboard (2e) graphs every stat on the committee, so
+ * the per-stat path would be an N+1 that grows with the board.
+ */
+export async function getStatSeriesBatch(
+  statIds: string[],
+  scale: Scale,
+  canEdit: boolean,
+): Promise<Map<string, SeriesView>> {
+  const out = new Map<string, SeriesView>();
+  if (statIds.length === 0) return out;
+
+  const supa = getServiceClient();
+  const latestWeek = await currentWeekEnding();
+  const template = buildBuckets(scale, latestWeek);
+  const from = template[0].start;
+  const to = template[template.length - 1].end;
+
+  const [rollupRes, entryRes, noteRes] = await Promise.all([
+    supa.from('stats').select('id, rollup').in('id', statIds),
+    supa
+      .from('stat_entries')
+      .select('stat_id, week_ending, value, updated_at')
+      .in('stat_id', statIds)
+      .gte('week_ending', from)
+      .lte('week_ending', to)
+      .order('updated_at', { ascending: true }), // later rows overwrite earlier
+    supa
+      .from('stat_notes')
+      .select('id, subject_id, note_date, body')
+      .eq('subject_type', 'stat')
+      .in('subject_id', statIds)
+      .eq('show_on_graph', true)
+      .gte('note_date', from)
+      .lte('note_date', to)
+      .order('note_date', { ascending: true }),
+  ]);
+
+  const rollupById = new Map<string, Rollup>();
+  for (const r of rollupRes.data ?? []) {
+    const v = r.rollup as Rollup;
+    rollupById.set(r.id, ROLLUPS.includes(v) ? v : 'sum');
+  }
+
+  const weeklyById = new Map<string, Map<string, number>>();
+  for (const e of entryRes.data ?? []) {
+    if (e.value == null) continue;
+    let m = weeklyById.get(e.stat_id);
+    if (!m) weeklyById.set(e.stat_id, (m = new Map()));
+    m.set(e.week_ending, Number(e.value)); // last write wins, as ordered above
+  }
+
+  const notesById = new Map<string, GraphNote[]>();
+  for (const n of noteRes.data ?? []) {
+    const arr = notesById.get(n.subject_id) ?? [];
+    arr.push({ id: n.id, date: n.note_date, body: n.body });
+    notesById.set(n.subject_id, arr);
+  }
+
+  for (const id of statIds) {
+    // Each stat needs its OWN point objects — assembleSeries mutates them.
+    const points = template.map((p) => ({ ...p }));
+    out.set(
+      id,
+      assembleSeries(
+        points,
+        weeklyById.get(id) ?? new Map(),
+        notesById.get(id) ?? [],
+        rollupById.get(id) ?? 'sum',
+        scale,
+        'stat',
+        canEdit,
+      ),
+    );
+  }
+  return out;
+}
+
 export async function getSeries(
   subjectType: SubjectType,
   subjectId: string,
@@ -224,29 +336,19 @@ export async function getSeries(
       .order('note_date', { ascending: true }),
   ]);
 
-  // Bucket the weekly values, oldest week first so 'last' means last.
-  const weeks = [...weekly.keys()].sort();
-  for (const p of points) {
-    const inBucket = weeks.filter((w) => w >= p.start && w <= p.end);
-    if (inBucket.length === 0) continue; // stays null → NR, line breaks
-    p.value = reduce(
-      inBucket.map((w) => weekly.get(w)!),
-      scale === 'weekly' ? 'last' : rollup, // weekly is native: one week, one value
-    );
-  }
-
-  return {
-    scale,
-    rollup,
-    rollupNote: rollupNoteFor(scale, rollup),
+  return assembleSeries(
     points,
-    notes: (noteRes.data ?? []).map((n) => ({
+    weekly,
+    (noteRes.data ?? []).map((n) => ({
       id: n.id,
       date: n.note_date,
       body: n.body,
     })),
-    canSetRollup: canEdit && subjectType === 'stat',
-  };
+    rollup,
+    scale,
+    subjectType,
+    canEdit,
+  );
 }
 
 export function asScale(v: unknown): Scale {

@@ -242,6 +242,33 @@ select '99999999-9999-4999-8999-999999999999',
 from anchor a;
 
 -- ---------------------------------------------------------------------------
+-- 4d. A stat in a THIRD division, held by nobody. The committee view (2e) shows
+--     every stat regardless of holder, so this proves the committee dashboard is
+--     not filtered to the logged-in member the way /dashboard is — and it gives
+--     the group view more than one area to page through.
+-- ---------------------------------------------------------------------------
+
+insert into dev.stats (id, post_id, name, active, rollup)
+select 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', d.head_post_id, 'Weekly Income', true, 'sum'
+from dev.departments d
+join dev.divisions v on v.id = d.division_id and v.number = 3
+where d.head_post_id is not null
+order by d.sort_order
+limit 1;
+
+with anchor as (
+  select (current_date + ((3 - extract(dow from current_date)::int + 7) % 7))::date as this_wed
+), demo(weeks_back, value) as (
+  values (9, 1200), (8, 1450), (7, 1100), (6, 1800), (5, 2100),
+         (4, 1950), (3, 2400), (2, 2250), (1, 2800), (0, 3100)
+)
+insert into dev.stat_entries (stat_id, member_id, week_ending, value)
+select 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+       '22222222-2222-4222-8222-222222222222',
+       (a.this_wed - (d.weeks_back * 7)), d.value
+from anchor a, demo d;
+
+-- ---------------------------------------------------------------------------
 -- 5. Notes, including two flagged to show on the graph
 -- ---------------------------------------------------------------------------
 

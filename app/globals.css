@@ -1589,10 +1589,13 @@ a {
   .acct-brand {
     display: none;
   }
-  /* nav on its own row, account info on the next */
+  /* nav on its own row, account info on the next. It MUST wrap: the nav grew
+     past one 375px row at five items (Committee was the one that broke it), and
+     an unwrapped row overflows every page horizontally, not just the new one. */
   .acct-nav {
     flex: 1 1 100%;
-    gap: 18px;
+    flex-wrap: wrap;
+    gap: 8px 14px;
   }
   .acct-spacer {
     display: none;
@@ -2765,7 +2768,9 @@ a {
    its own, so the grid never forces the page to scroll horizontally. */
 .db-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(440px, 1fr));
+  /* auto-fill for the same reason as .cm-grid: one card should not stretch to
+     the full width just because it is alone. */
+  grid-template-columns: repeat(auto-fill, minmax(440px, 1fr));
   gap: 16px;
   /* stretch (the default): cards in a row match heights, so their top edges and
      plot areas line up instead of stepping. */
@@ -2856,5 +2861,229 @@ a {
   }
   .db-head h1 {
     font-size: 19px;
+  }
+}
+
+/* ==========================================================================
+   Slice 2e — committee-wide stats, grouped
+   ========================================================================== */
+.cm-wrap {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 22px 18px 60px;
+}
+.cm-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.cm-head h1 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.cm-sub {
+  margin: 4px 0 0;
+  font-size: 13.5px;
+  color: var(--muted);
+}
+.cm-mine {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--accent);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.cm-mine:hover {
+  text-decoration: underline;
+}
+
+/* page-level controls: one time scale + the org grain, driving every chart */
+.cm-controls {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+  margin: 16px 0 6px;
+}
+.cm-ctlgroup {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.cm-ctllabel {
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  background: var(--bg);
+  border-right: 1px solid var(--line-strong);
+  white-space: nowrap;
+}
+
+/* group chips: jump to + focus one area at a time */
+.cm-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0 18px;
+}
+.cm-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 12px;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink);
+  background: var(--panel);
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  cursor: pointer;
+}
+.cm-chip:hover {
+  border-color: var(--accent);
+}
+.cm-chip-on {
+  color: #fff;
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.cm-chip-plain {
+  color: var(--muted);
+  font-weight: 500;
+  margin-left: auto;
+}
+.cm-chipcount {
+  padding: 1px 7px;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 999px;
+  background: var(--bg);
+  color: var(--muted);
+}
+.cm-chip-on .cm-chipcount {
+  background: rgba(255, 255, 255, 0.22);
+  color: #fff;
+}
+
+/* a group section */
+.cm-group {
+  margin: 0 0 22px;
+  scroll-margin-top: 16px;
+}
+.cm-grouphead {
+  border-bottom: 2px solid var(--line-strong);
+  padding-bottom: 6px;
+  margin-bottom: 14px;
+}
+.cm-grouptoggle {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 2px 0;
+  font: inherit;
+  text-align: left;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  color: var(--ink);
+}
+.cm-caret {
+  display: inline-block;
+  font-size: 12px;
+  color: var(--muted);
+  transition: transform 120ms ease;
+}
+.cm-caret-open {
+  transform: rotate(90deg);
+}
+.cm-groupname {
+  font-size: 16.5px;
+  font-weight: 700;
+}
+.cm-groupcount {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--muted);
+}
+.cm-groupbadge {
+  padding: 1px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--accent);
+  background: var(--bg);
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+}
+.cm-groupsub {
+  margin: 2px 0 0 21px;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+/* Three across on a wide screen (the meeting projector), reusing .db-card. */
+.cm-grid {
+  display: grid;
+  /* auto-FILL, not auto-fit: auto-fit collapses unused tracks, so a group with
+     one stat stretched that single chart across the whole projector. auto-fill
+     keeps the track grid, so a card is the same size in every group. */
+  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+  gap: 14px;
+  align-items: start;
+}
+.cm-grid .db-card {
+  align-self: stretch;
+}
+/* …except a card with no plot, which would otherwise be a tall empty box. This
+   has to out-specify the rule above, hence the .cm-grid prefix. */
+.cm-grid .db-card-nodata {
+  align-self: start;
+}
+.cm-grid .db-cardhead h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.cm-empty {
+  margin: 20px 0 0;
+  padding: 16px;
+  background: var(--panel);
+  border: 1px dashed var(--line-strong);
+  border-radius: 12px;
+  font-size: 13.5px;
+  color: var(--muted);
+}
+
+@media (max-width: 639px) {
+  .cm-wrap {
+    padding: 16px 12px 48px;
+  }
+  .cm-head h1 {
+    font-size: 19px;
+  }
+  .cm-controls {
+    gap: 10px;
+  }
+  /* Groups stack; one chart per row so the plot keeps its legible width. */
+  .cm-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .cm-chip-plain {
+    margin-left: 0;
+  }
+  .cm-groupname {
+    font-size: 15px;
   }
 }

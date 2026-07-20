@@ -28,6 +28,9 @@ export function AccountBar({
         <Link href="/dashboard" className="acct-link">
           My Dashboard
         </Link>
+        <Link href="/committee" className="acct-link">
+          Committee
+        </Link>
         <Link href="/stats" className="acct-link">
           Stats
         </Link>
