@@ -1,4 +1,9 @@
 :root {
+  /* The app is a light theme. Declaring this stops browsers (Safari/Firefox in
+     OS dark mode) from applying their dark UA styling to form controls — which
+     is what turned inline-edit inputs into white-text-on-white. */
+  color-scheme: light;
+
   --bg: #f4f5f7;
   --panel: #ffffff;
   --ink: #1f2937;
@@ -7,6 +12,34 @@
   --line-strong: #d1d5db;
   --accent: #2563eb;
   --danger: #b91c1c;
+}
+
+/* Every text field is a light field, so force dark text/caret regardless of the
+   (possibly dark) box it sits in AND regardless of the viewer's OS dark mode.
+   -webkit-text-fill-color is what actually paints the glyphs in WebKit, so it
+   must be set too — `color` alone can be overridden by the UA in dark mode. */
+input,
+textarea,
+select,
+.edit-input,
+.edit-textarea,
+.auth-input,
+.invite-input,
+.stx-input,
+.stx-select,
+.rpt-input {
+  color: #111827;
+  -webkit-text-fill-color: #111827;
+  caret-color: #111827;
+  background-color: #fff;
+  color-scheme: light;
+}
+/* Keep placeholders muted (the text-fill above would otherwise darken them). */
+input::placeholder,
+textarea::placeholder {
+  color: #6b7280;
+  -webkit-text-fill-color: #6b7280;
+  opacity: 1;
 }
 
 * {
