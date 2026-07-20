@@ -1,6 +1,7 @@
 import 'server-only';
 import { getServiceClient } from '@/lib/supabase/server';
 import { loadHierarchy, type Hierarchy, type PostNode } from '@/lib/hierarchy';
+import { loadAdjustable } from '@/lib/adjustable';
 
 // The JUNIOR-CARD reporting view.
 //
@@ -109,8 +110,17 @@ export async function getReportView(
   // Every stat this member is responsible for, so counts and values are fetched
   // once for the whole view rather than per card.
   const mine = h.statsFor(memberId);
+
+  // Adjustable stats (Hours, Active Members, Target Dones) are NOT entered as a
+  // plain value — their value is base+manual (lib/adjustable.ts). They must be
+  // kept out of the plain report inputs so a typed value never lands in
+  // stat_entries (which the adjustable read path ignores). They are reported
+  // from their own base+manual form; here they only need to be excluded.
+  const adjustableIds = new Set((await loadAdjustable(mine.map((s) => s.id))).keys());
+  const isPlain = (statId: string) => !adjustableIds.has(statId);
+
   const reported = await valuesForWeek(
-    mine.map((s) => s.id),
+    mine.filter((s) => isPlain(s.id)).map((s) => s.id),
     weekEnding,
   );
 
@@ -140,11 +150,13 @@ export async function getReportView(
       }
     }
     const ownStats: EntryStat[] = held.flatMap((hp) =>
-      h.statsOf(hp.postId).map((s) => ({
-        statId: s.id,
-        name: s.name,
-        value: reported.get(s.id) ?? null,
-      })),
+      h.statsOf(hp.postId)
+        .filter((s) => isPlain(s.id))
+        .map((s) => ({
+          statId: s.id,
+          name: s.name,
+          value: reported.get(s.id) ?? null,
+        })),
     );
     return {
       postId: null,
@@ -188,7 +200,7 @@ export async function getReportView(
     breadcrumb,
     ownStats: h
       .statsOf(postId)
-      .filter((s) => h.effectiveHolderOf(s.postId) === memberId)
+      .filter((s) => h.effectiveHolderOf(s.postId) === memberId && isPlain(s.id))
       .map((s) => ({
         statId: s.id,
         name: s.name,

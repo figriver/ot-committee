@@ -34,3 +34,7 @@ yarn-error.log*
 # supabase local
 /supabase/.branches
 /supabase/.temp
+
+# Source data files for imports (not code)
+*.xlsx
+*.csv

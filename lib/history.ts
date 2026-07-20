@@ -2,6 +2,7 @@ import 'server-only';
 import { getServiceClient } from '@/lib/supabase/server';
 import { currentWeekEnding, addDaysISO } from '@/lib/week';
 import { loadHierarchy } from '@/lib/hierarchy';
+import { getAdjustableWeekly, type BaseKind } from '@/lib/adjustable';
 import type { Member } from '@/lib/types';
 
 // The history view: for one subject (a named stat, or a member's hours), the
@@ -136,6 +137,71 @@ async function hasOlderThan(
 }
 
 /** History of a named stat: one row per week, across every holder who reported it. */
+/**
+ * History table for an ADJUSTABLE stat: one row per week showing the base+manual
+ * total, read from lib/adjustable so it matches the graph. The manual side
+ * carries the note/attribution; correcting an adjustable week happens on its own
+ * base+manual form, so these rows are display-only here (canEdit stays false).
+ */
+async function getAdjustableHistory(
+  member: Member,
+  stat: { id: string; name: string; post_id: string; base_kind: string },
+  weeks: string[],
+  page: number,
+  oldest: string,
+): Promise<HistoryView> {
+  const supa = getServiceClient();
+  const totals = await getAdjustableWeekly(
+    { id: stat.id, name: stat.name, baseKind: (stat.base_kind as BaseKind) ?? 'none' },
+    weeks[weeks.length - 1],
+    weeks[0],
+  );
+  const [postRes, adjRes, earliestRes] = await Promise.all([
+    supa.from('posts').select('title').eq('id', stat.post_id).maybeSingle(),
+    supa
+      .from('stat_adjustments')
+      .select('week_ending, source, updated_by')
+      .eq('stat_id', stat.id)
+      .gte('week_ending', weeks[weeks.length - 1])
+      .lte('week_ending', weeks[0]),
+    supa
+      .from('stat_adjustments')
+      .select('week_ending')
+      .eq('stat_id', stat.id)
+      .order('week_ending', { ascending: true })
+      .limit(1)
+      .maybeSingle(),
+  ]);
+  const meta = new Map((adjRes.data ?? []).map((a) => [a.week_ending, a]));
+  const names = await memberNames(
+    (adjRes.data ?? []).map((a) => a.updated_by).filter(Boolean) as string[],
+  );
+  const rows: HistoryRow[] = weeks.map((w) => {
+    const t = totals.get(w);
+    const m = meta.get(w);
+    const who = m?.source === 'import' ? 'Import' : m?.updated_by ? names.get(m.updated_by) ?? null : null;
+    return {
+      weekEnding: w,
+      value: t != null ? String(Math.round(t * 100) / 100) : null,
+      updatedBy: who,
+      updatedAt: null,
+    };
+  });
+  return {
+    subjectType: 'stat',
+    subjectId: stat.id,
+    title: stat.name,
+    subtitle: postRes.data?.title ?? null,
+    unit: 'Total (base + manual)',
+    canEdit: false, // corrected from the base+manual form, not the inline table
+    rows,
+    notes: await getNotes('stat', stat.id, member.id),
+    page,
+    hasNewer: page > 0,
+    hasOlder: await hasOlderThan(oldest, earliestRes.data?.week_ending ?? null),
+  };
+}
+
 export async function getStatHistory(
   member: Member,
   statId: string,
@@ -144,7 +210,7 @@ export async function getStatHistory(
   const supa = getServiceClient();
   const { data: stat } = await supa
     .from('stats')
-    .select('id, name, post_id')
+    .select('id, name, post_id, is_adjustable, base_kind')
     .eq('id', statId)
     .maybeSingle();
   if (!stat) return null;
@@ -152,6 +218,12 @@ export async function getStatHistory(
   const weeks = await weeksForPage(page);
   const oldest = weeks[weeks.length - 1];
   const newest = weeks[0];
+
+  // Adjustable stats aren't in stat_entries — their per-week value is base+manual
+  // (lib/adjustable.ts). Build the table from that so it agrees with the graph.
+  if (stat.is_adjustable) {
+    return getAdjustableHistory(member, stat, weeks, page, oldest);
+  }
 
   const [entryRes, earliestRes, postRes, canEdit, notes] = await Promise.all([
     supa

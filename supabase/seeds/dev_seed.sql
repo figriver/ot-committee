@@ -60,6 +60,12 @@ select id, vfp, updated_at from public.board_meta;
 insert into dev.settings (key, value, updated_at)
 select key, value, updated_at from public.settings;
 
+-- Dev reports on a THURSDAY-ending week (the OTC stat-import alignment; public
+-- stays Wednesday until the approved prod run). The copy above brought public's
+-- Wednesday over, so force dev to Thursday here — otherwise the generated week
+-- grid (Wed) would miss the Thursday-dated data and every week reads NR.
+update dev.settings set value = '4' where key = 'week_lock_dow';
+
 -- ---------------------------------------------------------------------------
 -- 2. Demo members (all fabricated; michael is here only as the dev allowlist
 --    entry so a local login reaches the dev board)
@@ -138,7 +144,7 @@ limit 1;
 -- weeks_back -> value. Missing weeks_back (9 and 4) are deliberate NR gaps:
 -- no row at all, which is how the app distinguishes "not reported" from 0.
 with anchor as (
-  select (current_date + ((3 - extract(dow from current_date)::int + 7) % 7))::date as this_wed
+  select (current_date + ((4 - extract(dow from current_date)::int + 7) % 7))::date as this_wed
 ), demo(weeks_back, value, hours) as (
   values (11, 12, 8), (10, 18, 11), (8, 21, 12), (7, 19, 9), (6, 26, 14),
          (5, 31, 15), (3, 24, 10), (2, 33, 16), (1, 41, 18), (0, 38, 13)
@@ -151,7 +157,7 @@ select '55555555-5555-4555-8555-555555555555',
 from anchor a, demo d;
 
 with anchor as (
-  select (current_date + ((3 - extract(dow from current_date)::int + 7) % 7))::date as this_wed
+  select (current_date + ((4 - extract(dow from current_date)::int + 7) % 7))::date as this_wed
 ), demo(weeks_back, hours) as (
   values (11, 8), (10, 11), (9, 6), (8, 12), (7, 9), (6, 14),
          (5, 15), (3, 10), (2, 16), (1, 18), (0, 13)
@@ -187,7 +193,7 @@ limit 1;
 
 -- Letters Out: a clear climb with one NR gap and two drops.
 with anchor as (
-  select (current_date + ((3 - extract(dow from current_date)::int + 7) % 7))::date as this_wed
+  select (current_date + ((4 - extract(dow from current_date)::int + 7) % 7))::date as this_wed
 ), demo(weeks_back, value) as (
   values (11, 40), (10, 52), (9, 48), (8, 61), (7, 75), (5, 70),
          (4, 88), (3, 96), (2, 91), (1, 110), (0, 124)
@@ -200,7 +206,7 @@ from anchor a, demo d;
 
 -- Percent rising: a rate, so it stays in 0-100 and averages on rollup.
 with anchor as (
-  select (current_date + ((3 - extract(dow from current_date)::int + 7) % 7))::date as this_wed
+  select (current_date + ((4 - extract(dow from current_date)::int + 7) % 7))::date as this_wed
 ), demo(weeks_back, value) as (
   values (11, 55), (10, 62), (9, 58), (8, 71), (6, 66), (5, 74),
          (4, 80), (3, 77), (2, 85), (1, 83), (0, 90)
@@ -213,7 +219,7 @@ from anchor a, demo d;
 
 -- The dev admin's own hours (the dashboard's first card).
 with anchor as (
-  select (current_date + ((3 - extract(dow from current_date)::int + 7) % 7))::date as this_wed
+  select (current_date + ((4 - extract(dow from current_date)::int + 7) % 7))::date as this_wed
 ), demo(weeks_back, hours) as (
   values (11, 14), (10, 16), (9, 12), (8, 18), (7, 15), (6, 20),
          (4, 17), (3, 22), (2, 19), (1, 24), (0, 21)
@@ -246,7 +252,7 @@ limit 1;
 
 -- Exactly one reported week for the second one. (The first gets no entries at all.)
 with anchor as (
-  select (current_date + ((3 - extract(dow from current_date)::int + 7) % 7))::date as this_wed
+  select (current_date + ((4 - extract(dow from current_date)::int + 7) % 7))::date as this_wed
 )
 insert into dev.stat_entries (stat_id, member_id, week_ending, value)
 select '99999999-9999-4999-8999-999999999999',
@@ -270,7 +276,7 @@ order by d.sort_order
 limit 1;
 
 with anchor as (
-  select (current_date + ((3 - extract(dow from current_date)::int + 7) % 7))::date as this_wed
+  select (current_date + ((4 - extract(dow from current_date)::int + 7) % 7))::date as this_wed
 ), demo(weeks_back, value) as (
   values (9, 1200), (8, 1450), (7, 1100), (6, 1800), (5, 2100),
          (4, 1950), (3, 2400), (2, 2250), (1, 2800), (0, 3100)
@@ -286,7 +292,7 @@ from anchor a, demo d;
 -- ---------------------------------------------------------------------------
 
 with anchor as (
-  select (current_date + ((3 - extract(dow from current_date)::int + 7) % 7))::date as this_wed
+  select (current_date + ((4 - extract(dow from current_date)::int + 7) % 7))::date as this_wed
 )
 insert into dev.stat_notes (subject_type, subject_id, note_date, body, show_on_graph, created_by)
 select 'stat', '55555555-5555-4555-8555-555555555555'::uuid,

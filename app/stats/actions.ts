@@ -6,6 +6,7 @@ import { getServiceClient } from '@/lib/supabase/server';
 import { isWeekEnding } from '@/lib/week';
 import { assertWeekOpen } from '@/lib/lock';
 import { reportableStatIds } from '@/lib/reporting';
+import { loadAdjustable } from '@/lib/adjustable';
 
 /**
  * Save the current member's weekly report: their Hours (once) + a value for each
@@ -66,6 +67,9 @@ export async function submitReport(formData: FormData): Promise<void> {
     // being able to report the branch that devolved away from them. Same
     // resolver the UI uses, so what is shown and what is accepted cannot drift.
     const reportable = await reportableStatIds(member.id);
+    // Adjustable stats are never written here — they use stat_adjustments, and a
+    // value in stat_entries would be silently ignored by their read path.
+    const adjustable = await loadAdjustable(submitted.map((s) => s.statId));
 
     const { data: stats } = await supa
       .from('stats')
@@ -77,7 +81,7 @@ export async function submitReport(formData: FormData): Promise<void> {
     const postByStat = new Map((stats ?? []).map((s) => [s.id, s.post_id]));
 
     const rows = submitted
-      .filter((s) => reportable.has(s.statId) && postByStat.has(s.statId))
+      .filter((s) => reportable.has(s.statId) && postByStat.has(s.statId) && !adjustable.has(s.statId))
       .map((s) => ({
         stat_id: s.statId,
         member_id: member.id,

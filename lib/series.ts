@@ -1,5 +1,6 @@
 import 'server-only';
 import { getServiceClient } from '@/lib/supabase/server';
+import { loadAdjustable, getAdjustableWeekly } from '@/lib/adjustable';
 import { currentWeekEnding, addDaysISO } from '@/lib/week';
 import type { SubjectType } from '@/lib/history';
 
@@ -271,6 +272,14 @@ export async function getStatSeriesBatch(
     m.set(e.week_ending, Number(e.value)); // last write wins, as ordered above
   }
 
+  // Adjustable stats don't live in stat_entries — their weekly value is
+  // base+manual (lib/adjustable.ts). Compute those and use them instead, so the
+  // graph and the report/history agree on the same total.
+  const adjustable = await loadAdjustable(statIds);
+  for (const [id, stat] of adjustable) {
+    weeklyById.set(id, await getAdjustableWeekly(stat, from, to));
+  }
+
   const notesById = new Map<string, GraphNote[]>();
   for (const n of noteRes.data ?? []) {
     const arr = notesById.get(n.subject_id) ?? [];
@@ -321,10 +330,16 @@ export async function getSeries(
     if (r && ROLLUPS.includes(r)) rollup = r;
   }
 
+  // An adjustable stat's value is base+manual (computed), not a stat_entries row.
+  const adjustable =
+    subjectType === 'stat' ? (await loadAdjustable([subjectId])).get(subjectId) : undefined;
+
   const [weekly, noteRes] = await Promise.all([
     // Pull from the first bucket's start so a month/quarter counts every week
     // whose week_ending lands inside it.
-    weeklyValues(subjectType, subjectId, from, to),
+    adjustable
+      ? getAdjustableWeekly(adjustable, from, to)
+      : weeklyValues(subjectType, subjectId, from, to),
     supa
       .from('stat_notes')
       .select('id, note_date, body')

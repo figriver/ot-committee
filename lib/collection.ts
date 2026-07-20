@@ -66,7 +66,9 @@ export async function getCollection(weekEnding: string): Promise<CollectionView>
       hours: hoursBy.get(m.id) ?? null,
       owedStats: hier.statsFor(m.id).length,
     }))
-    .filter((m) => m.email !== '') // no email = nothing to chase
+    // Drop system accounts (e.g. the historical-import actor, import@system):
+    // they never report and are not people to chase.
+    .filter((m) => m.email !== '' && !/@system$/i.test(m.email))
     .sort((a, b) => (a.name ?? a.email).localeCompare(b.name ?? b.email));
 
   const missing = rows.filter((r) => !r.reported);
