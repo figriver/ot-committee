@@ -1494,9 +1494,12 @@ a {
   font: inherit;
   font-size: 13px;
   padding: 4px 8px;
-  min-width: 0;
+  /* Wide enough to read a full name — the table column sizes to this, and a
+     truncated "Michael Figu…" placeholder defeats the point of showing the
+     current fallback. */
+  min-width: 170px;
   width: 100%;
-  max-width: 190px;
+  max-width: 220px;
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-sm);
 }
