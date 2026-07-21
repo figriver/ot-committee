@@ -2703,55 +2703,48 @@ a {
   flex-wrap: wrap;
   margin-bottom: 12px;
 }
-/* Scale + Range groups share one labelled row; the custom-date row wraps below. */
-.gr-ctlmain {
+/* Compact control dropdowns (Scale · Range · Group by).
+   These replaced three segmented button groups: set-and-forget controls carry
+   their current value in the width of a single pill, so the row stays on one
+   line on a phone. Frequently-tapped navigation (the committee group chips)
+   stays visible — it is not collapsed into a dropdown. */
+.ctl-row {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 10px 14px;
   flex-wrap: wrap;
 }
-.gr-ctlseg {
+.ctl {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+  min-width: 0;
 }
-.gr-ctllabel {
+.ctl-label {
   font-size: var(--text-caption);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   font-weight: 700;
   color: var(--text-subtle);
+  white-space: nowrap;
 }
-.gr-ranges {
-  display: inline-flex;
+.ctl-select {
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--heading);
+  background: var(--surface);
+  padding: 5px 8px;
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-sm);
-  overflow: hidden;
-}
-.gr-range {
-  padding: 5px 11px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--muted);
-  background: var(--surface);
-  border: none;
-  border-right: 1px solid var(--border-strong);
   cursor: pointer;
-  font-family: inherit;
+  min-width: 0;
 }
-.gr-range:last-child {
-  border-right: none;
-}
-.gr-range:hover {
-  color: var(--heading);
+.ctl-select:hover {
   background: var(--surface-sunken);
 }
-.gr-range-on,
-.gr-range-on:hover {
-  color: var(--accent-contrast);
-  background: var(--accent);
-}
-.gr-customrow {
+/* The custom From/To row wraps onto its own line under the dropdowns. */
+.ctl-customrow {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -2759,7 +2752,7 @@ a {
   flex-basis: 100%;
   padding-top: 4px;
 }
-.gr-customlbl {
+.ctl-customlbl {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -2767,7 +2760,7 @@ a {
   color: var(--muted);
   font-weight: 600;
 }
-.gr-customdate {
+.ctl-customdate {
   font: inherit;
   font-size: 12px;
   color: var(--text);
@@ -2776,36 +2769,10 @@ a {
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-sm);
 }
-.gr-customhint {
+.ctl-customhint {
   font-size: 11px;
   color: var(--text-subtle);
   font-style: italic;
-}
-.gr-scales {
-  display: inline-flex;
-  border: 1px solid var(--line-strong);
-  border-radius: 8px;
-  overflow: hidden;
-}
-.gr-scale {
-  padding: 6px 12px;
-  font-size: 12.5px;
-  font-weight: 600;
-  color: var(--muted);
-  background: var(--panel);
-  border-right: 1px solid var(--line-strong);
-}
-.gr-scale:last-child {
-  border-right: none;
-}
-.gr-scale:hover {
-  color: var(--ink);
-  background: var(--surface-sunken);
-}
-.gr-scale-on,
-.gr-scale-on:hover {
-  color: var(--accent-contrast);
-  background: var(--accent);
 }
 .gr-rollup {
   display: inline-flex;
@@ -2984,15 +2951,6 @@ a {
   text-decoration: underline;
 }
 
-/* One scale selector for the whole page — every card reads the same time base. */
-.db-scales {
-  display: inline-flex;
-  border: 1px solid var(--line-strong);
-  border-radius: 8px;
-  overflow: hidden;
-  margin: 16px 0 14px;
-}
-
 /* Two columns on a wide screen; the chart inside each card scrolls sideways on
    its own, so the grid never forces the page to scroll horizontally. */
 .db-grid {
@@ -3137,23 +3095,6 @@ a {
   flex-wrap: wrap;
   margin: 16px 0 6px;
 }
-.cm-ctlgroup {
-  display: inline-flex;
-  align-items: center;
-  border: 1px solid var(--line-strong);
-  border-radius: 8px;
-  overflow: hidden;
-}
-.cm-ctllabel {
-  padding: 6px 10px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--muted);
-  background: var(--bg);
-  border-right: 1px solid var(--line-strong);
-  white-space: nowrap;
-}
-
 /* group chips: jump to + focus one area at a time */
 .cm-chips {
   display: flex;

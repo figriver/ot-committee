@@ -2,10 +2,10 @@
 
 import { useEffect, useRef, useState, useTransition } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { setStatRollup } from '@/app/stats/history/actions';
 import type { Scale, Rollup } from '@/lib/series';
-import { type Range, DEFAULT_RANGE, RANGE_PRESETS, RANGE_LABELS } from '@/lib/range';
+import { type Range, DEFAULT_RANGE } from '@/lib/range';
+import { ControlSelect, RangeSelect } from '@/components/graph-controls';
 
 // A single-series line chart, hand-drawn in SVG (no chart lib — this codebase
 // carries no UI dependencies).
@@ -121,20 +121,8 @@ export function StatGraph({
   windowTo,
   latestWeek,
 }: Props) {
-  const router = useRouter();
   const svgRef = useRef<SVGSVGElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const [customOpen, setCustomOpen] = useState(range === 'custom');
-  const [cFrom, setCFrom] = useState(windowFrom ?? '');
-  const [cTo, setCTo] = useState(windowTo ?? '');
-
-  const applyCustom = (f: string, t: string) => {
-    setCFrom(f);
-    setCTo(t);
-    // Navigate only with a complete, ordered range; the server clamps the "to"
-    // to the current week regardless, so the future can never be requested.
-    if (f && t && f <= t) router.push(hrefFor({ range: 'custom', from: f, to: t }));
-  };
   const [hover, setHover] = useState<
     { kind: 'point'; i: number } | { kind: 'note'; id: string } | null
   >(null);
@@ -262,46 +250,24 @@ export function StatGraph({
         hidden={!showControls && !(canSetRollup && scale !== 'weekly')}
       >
         {showControls && (
-          <div className="gr-ctlmain">
-            <div className="gr-ctlseg">
-              <span className="gr-ctllabel">Scale</span>
-              <div className="gr-scales" role="group" aria-label="Time scale">
-                {(['weekly', 'monthly', 'quarterly'] as Scale[]).map((s) => (
-                  <Link
-                    key={s}
-                    href={scaleHref(s)}
-                    className={`gr-scale${s === scale ? ' gr-scale-on' : ''}`}
-                    aria-current={s === scale ? 'true' : undefined}
-                  >
-                    {s[0].toUpperCase() + s.slice(1)}
-                  </Link>
-                ))}
-              </div>
-            </div>
-            <div className="gr-ctlseg">
-              <span className="gr-ctllabel">Range</span>
-              <div className="gr-ranges" role="group" aria-label="Date range">
-                {RANGE_PRESETS.map((r) => (
-                  <Link
-                    key={r}
-                    href={hrefFor({ range: r })}
-                    className={`gr-range${r === range ? ' gr-range-on' : ''}`}
-                    aria-current={r === range ? 'true' : undefined}
-                  >
-                    {RANGE_LABELS[r]}
-                  </Link>
-                ))}
-                <button
-                  type="button"
-                  className={`gr-range gr-range-btn${range === 'custom' ? ' gr-range-on' : ''}`}
-                  aria-pressed={range === 'custom'}
-                  aria-expanded={customOpen}
-                  onClick={() => setCustomOpen((o) => !o)}
-                >
-                  {RANGE_LABELS.custom}
-                </button>
-              </div>
-            </div>
+          <div className="ctl-row">
+            <ControlSelect
+              label="Scale"
+              value={scale}
+              options={(['weekly', 'monthly', 'quarterly'] as Scale[]).map((s) => ({
+                value: s,
+                label: s[0].toUpperCase() + s.slice(1),
+                href: scaleHref(s),
+              }))}
+            />
+            <RangeSelect
+              value={range}
+              basePath={basePath}
+              params={{ scale, ...(page ? { page: String(page) } : {}) }}
+              from={windowFrom}
+              to={windowTo}
+              latestWeek={latestWeek}
+            />
           </div>
         )}
         {canSetRollup && scale !== 'weekly' && (
@@ -323,31 +289,6 @@ export function StatGraph({
               <option value="last">Last value</option>
             </select>
           </label>
-        )}
-        {showControls && (customOpen || range === 'custom') && (
-          <div className="gr-customrow">
-            <label className="gr-customlbl">
-              From
-              <input
-                type="date"
-                className="gr-customdate"
-                value={cFrom}
-                max={cTo || latestWeek}
-                onChange={(e) => applyCustom(e.target.value, cTo)}
-              />
-            </label>
-            <label className="gr-customlbl">
-              To
-              <input
-                type="date"
-                className="gr-customdate"
-                value={cTo}
-                max={latestWeek}
-                onChange={(e) => applyCustom(cFrom, e.target.value)}
-              />
-            </label>
-            <span className="gr-customhint">no future dates</span>
-          </div>
         )}
       </div>
 

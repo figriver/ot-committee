@@ -2,11 +2,12 @@ import Link from 'next/link';
 import { requireMember } from '@/lib/auth';
 import { getStatGroups, asGrain, type OrgGrain } from '@/lib/groups';
 import { getStatSeriesBatch, asScale, SCALES, type Scale } from '@/lib/series';
-import { asRange, DEFAULT_RANGE, RANGE_PRESETS, RANGE_LABELS, type Range } from '@/lib/range';
-import { formatDate } from '@/lib/week';
+import { asRange, DEFAULT_RANGE, type Range } from '@/lib/range';
+import { formatDate, currentWeekEnding } from '@/lib/week';
 import { AccountBar } from '@/components/account-bar';
 import { CommitteeBoard, type CommitteeGroup } from '@/components/committee-client';
 import { StatsSubNav } from '@/components/stats-subnav';
+import { ControlSelect, RangeSelect } from '@/components/graph-controls';
 
 export const dynamic = 'force-dynamic';
 
@@ -31,6 +32,9 @@ export default async function CommitteePage({
   const scale = asScale(sp.scale);
   const range = asRange(sp.range);
   const grain: OrgGrain = asGrain(sp.by);
+
+  // Hard right edge for the custom-range picker — the current week, never later.
+  const latestWeek = await currentWeekEnding();
 
   const groups = await getStatGroups(grain);
 
@@ -99,47 +103,36 @@ export default async function CommitteePage({
           </Link>
         </div>
 
-        <div className="cm-controls">
-          <div className="cm-ctlgroup" role="group" aria-label="Time scale">
-            {SCALES.map((s: Scale) => (
-              <Link
-                key={s}
-                href={href({ scale: s })}
-                className={`gr-scale${s === scale ? ' gr-scale-on' : ''}`}
-                aria-current={s === scale ? 'true' : undefined}
-              >
-                {s[0].toUpperCase() + s.slice(1)}
-              </Link>
-            ))}
-          </div>
-          <div className="cm-ctlgroup" role="group" aria-label="Date range">
-            <span className="cm-ctllabel">Range</span>
-            <div className="gr-ranges">
-              {RANGE_PRESETS.map((r) => (
-                <Link
-                  key={r}
-                  href={href({ range: r })}
-                  className={`gr-range${r === range ? ' gr-range-on' : ''}`}
-                  aria-current={r === range ? 'true' : undefined}
-                >
-                  {RANGE_LABELS[r]}
-                </Link>
-              ))}
-            </div>
-          </div>
-          <div className="cm-ctlgroup" role="group" aria-label="Group stats by">
-            <span className="cm-ctllabel">Group by</span>
-            {(['division', 'department'] as OrgGrain[]).map((g) => (
-              <Link
-                key={g}
-                href={href({ by: g })}
-                className={`gr-scale${g === grain ? ' gr-scale-on' : ''}`}
-                aria-current={g === grain ? 'true' : undefined}
-              >
-                {g[0].toUpperCase() + g.slice(1)}
-              </Link>
-            ))}
-          </div>
+        <div className="ctl-row cm-controls">
+          <ControlSelect
+            label="Scale"
+            value={scale}
+            options={SCALES.map((s: Scale) => ({
+              value: s,
+              label: s[0].toUpperCase() + s.slice(1),
+              href: href({ scale: s }),
+            }))}
+          />
+          <RangeSelect
+            value={range}
+            basePath="/committee"
+            params={{
+              scale: scale !== 'weekly' ? scale : undefined,
+              by: grain !== 'division' ? grain : undefined,
+            }}
+            from={sp.from}
+            to={sp.to}
+            latestWeek={latestWeek}
+          />
+          <ControlSelect
+            label="Group by"
+            value={grain}
+            options={(['division', 'department'] as OrgGrain[]).map((g) => ({
+              value: g,
+              label: g[0].toUpperCase() + g.slice(1),
+              href: href({ by: g }),
+            }))}
+          />
         </div>
 
         {view.length === 0 ? (

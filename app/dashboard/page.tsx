@@ -3,12 +3,13 @@ import { requireMember } from '@/lib/auth';
 import { getMyDashboard } from '@/lib/dashboard';
 import { recentWins } from '@/lib/wins';
 import { asScale, SCALES, type Scale } from '@/lib/series';
-import { asRange, DEFAULT_RANGE, RANGE_PRESETS, RANGE_LABELS, type Range } from '@/lib/range';
-import { formatDate } from '@/lib/week';
+import { asRange, DEFAULT_RANGE, type Range } from '@/lib/range';
+import { formatDate, currentWeekEnding } from '@/lib/week';
 import { AccountBar } from '@/components/account-bar';
 import { StatGraph } from '@/components/stat-graph';
 import { StatsSubNav } from '@/components/stats-subnav';
 import { CardControls } from '@/components/card-controls';
+import { ControlSelect, RangeSelect } from '@/components/graph-controls';
 
 export const dynamic = 'force-dynamic';
 
@@ -33,6 +34,9 @@ export default async function DashboardPage({
   const sp = await searchParams;
   const scale = asScale(sp.scale);
   const range = asRange(sp.range);
+
+  // Hard right edge for the custom-range picker — the current week, never later.
+  const latestWeek = await currentWeekEnding();
 
   const { cards, postCount, statCount, coveredCount } = await getMyDashboard(
     member,
@@ -109,37 +113,24 @@ export default async function DashboardPage({
           </section>
         )}
 
-        <div className="db-controls">
-          <div className="gr-ctlseg">
-            <span className="gr-ctllabel">Scale</span>
-            <div className="db-scales" role="group" aria-label="Time scale">
-              {SCALES.map((s: Scale) => (
-                <Link
-                  key={s}
-                  href={hrefWith({ scale: s })}
-                  className={`gr-scale${s === scale ? ' gr-scale-on' : ''}`}
-                  aria-current={s === scale ? 'true' : undefined}
-                >
-                  {s[0].toUpperCase() + s.slice(1)}
-                </Link>
-              ))}
-            </div>
-          </div>
-          <div className="gr-ctlseg">
-            <span className="gr-ctllabel">Range</span>
-            <div className="gr-ranges" role="group" aria-label="Date range">
-              {RANGE_PRESETS.map((r) => (
-                <Link
-                  key={r}
-                  href={hrefWith({ range: r })}
-                  className={`gr-range${r === range ? ' gr-range-on' : ''}`}
-                  aria-current={r === range ? 'true' : undefined}
-                >
-                  {RANGE_LABELS[r]}
-                </Link>
-              ))}
-            </div>
-          </div>
+        <div className="ctl-row db-controls">
+          <ControlSelect
+            label="Scale"
+            value={scale}
+            options={SCALES.map((s: Scale) => ({
+              value: s,
+              label: s[0].toUpperCase() + s.slice(1),
+              href: hrefWith({ scale: s }),
+            }))}
+          />
+          <RangeSelect
+            value={range}
+            basePath="/dashboard"
+            params={{ scale: scale !== 'weekly' ? scale : undefined }}
+            from={sp.from}
+            to={sp.to}
+            latestWeek={latestWeek}
+          />
         </div>
 
         {branches.map((b) => (
