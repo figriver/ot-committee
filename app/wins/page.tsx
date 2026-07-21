@@ -7,7 +7,7 @@ import { listWins, winsByArea, membersWithWins, type WinFilters } from '@/lib/wi
 import { asGrain } from '@/lib/area';
 import { isWeekEnding } from '@/lib/week';
 import { AccountBar } from '@/components/account-bar';
-import { WinsSubNav, type WinsTab } from '@/components/wins-subnav';
+import { MeetingSubNav } from '@/components/meeting-subnav';
 import { WinsFilterBar, WinRow } from '@/components/wins-client';
 import { WinComposer } from '@/components/win-composer';
 
@@ -20,7 +20,7 @@ export const dynamic = 'force-dynamic';
 
 type SP = { view?: string; from?: string; to?: string; area?: string; member?: string };
 
-function tabOf(v: string | undefined): WinsTab {
+function tabOf(v: string | undefined): 'together' | 'area' | 'member' {
   return v === 'area' ? 'area' : v === 'member' ? 'member' : 'together';
 }
 
@@ -59,7 +59,7 @@ export default async function WinsPage({ searchParams }: { searchParams: Promise
   return (
     <>
       <AccountBar email={member.email} isAdmin={member.role === 'admin'} />
-      <WinsSubNav active={view} query={carry.toString()} />
+      <MeetingSubNav active="wins" />
       <div className="wins-wrap">
         <div className="wins-head">
           <div>
@@ -71,6 +71,24 @@ export default async function WinsPage({ searchParams }: { searchParams: Promise
           <Link href="/stats" className="wins-enterlink">
             Report &amp; add wins →
           </Link>
+        </div>
+
+        {/* view switcher — inline, so the Meeting sub-nav above stays single */}
+        <div className="wins-viewswitch" role="group" aria-label="Wins view">
+          {(['together', 'area', 'member'] as const).map((v) => {
+            const q = new URLSearchParams(carry.toString());
+            q.set('view', v);
+            return (
+              <Link
+                key={v}
+                href={`/wins?${q.toString()}`}
+                className={`wvs-pill${v === view ? ' wvs-on' : ''}`}
+                aria-current={v === view ? 'true' : undefined}
+              >
+                {v === 'together' ? 'Together' : v === 'area' ? 'By Area' : 'By Member'}
+              </Link>
+            );
+          })}
         </div>
 
         {/* add a win (your own) — quick entry right on the feed */}

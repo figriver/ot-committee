@@ -24,6 +24,7 @@ export type Win = {
 export type WinFilters = {
   from?: string; // ISO win_date >=
   to?: string; // ISO win_date <=
+  weekEnding?: string; // ISO — wins in one reporting week (the meeting surface)
   areaPostId?: string;
   memberId?: string; // '' → any; 'unattributed' → is_unattributed
 };
@@ -93,6 +94,7 @@ export async function listWins(viewerId: string, filters: WinFilters = {}): Prom
 
   if (filters.from) q = q.gte('win_date', filters.from);
   if (filters.to) q = q.lte('win_date', filters.to);
+  if (filters.weekEnding) q = q.eq('week_ending', filters.weekEnding);
   if (filters.areaPostId) q = q.eq('area_post_id', filters.areaPostId);
   if (filters.memberId === 'unattributed') q = q.eq('is_unattributed', true);
   else if (filters.memberId) q = q.eq('member_id', filters.memberId);
