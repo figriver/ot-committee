@@ -5,12 +5,13 @@ import Link from 'next/link';
 // top-nav item beyond "Meeting" (keeps the top nav at 4 and off the mobile
 // wrap risk). Mirrors the Stats sub-nav.
 
-export type MeetingTab = 'week' | 'wins' | 'minutes';
+export type MeetingTab = 'week' | 'wins' | 'minutes' | 'enter';
 
 const TABS: { key: MeetingTab; label: string; href: string; hint: string }[] = [
   { key: 'week', label: 'This Week', href: '/meeting', hint: 'Wins + minutes' },
   { key: 'wins', label: 'Wins', href: '/wins', hint: 'The whole stream' },
   { key: 'minutes', label: 'Minutes', href: '/minutes', hint: 'Past meetings' },
+  { key: 'enter', label: 'Enter', href: '/meeting/enter', hint: 'Add wins & minutes' },
 ];
 
 export function MeetingSubNav({ active }: { active: MeetingTab }) {

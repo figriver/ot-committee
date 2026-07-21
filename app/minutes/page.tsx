@@ -24,6 +24,11 @@ export default async function MinutesArchive() {
             <h1>Past meetings</h1>
             <p className="mt-sub">Every week with minutes or wins — open one to read its record.</p>
           </div>
+          {member.role === 'admin' && (
+            <Link href="/meeting/enter" className="mt-current">
+              Write this week&rsquo;s minutes →
+            </Link>
+          )}
         </div>
 
         {weeks.length === 0 ? (

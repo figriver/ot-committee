@@ -1,7 +1,6 @@
 import Link from 'next/link';
 import { requireMember } from '@/lib/auth';
 import type { Member } from '@/lib/types';
-import { loadHierarchy } from '@/lib/hierarchy';
 import { getPostsForPicker } from '@/lib/stats';
 import { listWins, winsByArea, membersWithWins, type WinFilters } from '@/lib/wins';
 import { asGrain } from '@/lib/area';
@@ -9,7 +8,6 @@ import { isWeekEnding } from '@/lib/week';
 import { AccountBar } from '@/components/account-bar';
 import { MeetingSubNav } from '@/components/meeting-subnav';
 import { WinsFilterBar, WinRow } from '@/components/wins-client';
-import { WinComposer } from '@/components/win-composer';
 
 export const dynamic = 'force-dynamic';
 
@@ -38,17 +36,12 @@ export default async function WinsPage({ searchParams }: { searchParams: Promise
   // By Member with no member chosen defaults to the viewer.
   if (view === 'member' && !filters.memberId) filters.memberId = member.id;
 
-  const [h, pickerPosts, memberOpts] = await Promise.all([
-    loadHierarchy(),
+  const [pickerPosts, memberOpts] = await Promise.all([
     getPostsForPicker(),
     membersWithWins(),
   ]);
   const areaOptions = pickerPosts.map((p) => ({ id: p.id, label: p.label }));
 
-  // A member's default win area: a post they hold, else none.
-  const held = h.postsHeldBy(member.id);
-  const defaultAreaId = held[0] ?? '';
-  const today = new Date().toISOString().slice(0, 10);
 
   const carry = new URLSearchParams();
   if (filters.from) carry.set('from', filters.from);
@@ -68,8 +61,8 @@ export default async function WinsPage({ searchParams }: { searchParams: Promise
               The committee’s good news — dated, tagged to an area, shared with everyone.
             </p>
           </div>
-          <Link href="/stats" className="wins-enterlink">
-            Report &amp; add wins →
+          <Link href="/meeting/enter" className="wins-enterlink">
+            + Add a win on Enter →
           </Link>
         </div>
 
@@ -91,20 +84,7 @@ export default async function WinsPage({ searchParams }: { searchParams: Promise
           })}
         </div>
 
-        {/* add a win (your own) — quick entry right on the feed */}
-        <section className="wins-add">
-          <h2 className="wins-addh">Add a win</h2>
-          <WinComposer mode="member" areaOptions={areaOptions} defaultAreaId={defaultAreaId} today={today} />
-        </section>
-
-        {/* admin: unattributed entry for the meeting */}
-        {member.role === 'admin' && (
-          <section className="wins-add wins-add-admin">
-            <h2 className="wins-addh">Add unattributed win (admin)</h2>
-            <WinComposer mode="unattributed" areaOptions={areaOptions} defaultAreaId="" today={today} />
-          </section>
-        )}
-
+        {/* This is a view+filter surface — composers live only on Enter. */}
         <WinsFilterBar
           view={view}
           from={filters.from ?? ''}
@@ -132,7 +112,7 @@ async function Together({ member, filters }: { member: Member; filters: WinFilte
     <section>
       <p className="wins-count">{wins.length} win{wins.length === 1 ? '' : 's'}</p>
       {wins.length === 0 ? (
-        <p className="wins-empty">No wins match. Add one above, or widen the filters.</p>
+        <p className="wins-empty">No wins match — widen the filters, or <a href="/meeting/enter" className="gr-emptylink">add one on Enter</a>.</p>
       ) : (
         <ul className="win-list">
           {wins.map((w) => (
@@ -146,7 +126,7 @@ async function Together({ member, filters }: { member: Member; filters: WinFilte
 
 async function ByArea({ member, filters, grain }: { member: Member; filters: WinFilters; grain: 'division' | 'department' }) {
   const groups = await winsByArea(member.id, grain, filters);
-  if (groups.length === 0) return <p className="wins-empty">No wins match. Add one above, or widen the filters.</p>;
+  if (groups.length === 0) return <p className="wins-empty">No wins match — widen the filters, or <a href="/meeting/enter" className="gr-emptylink">add one on Enter</a>.</p>;
   return (
     <>
       {groups.map((g) => (

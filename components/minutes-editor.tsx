@@ -1,10 +1,14 @@
 'use client';
 
 import { useState, useTransition } from 'react';
+import Link from 'next/link';
 import { saveMinutes } from '@/app/meeting/actions';
 
-// Minutes for one week: everyone reads; an admin edits. The edit affordance is
-// only shown to admins, but the write is enforced server-side in saveMinutes.
+// Minutes for one week. Two modes:
+//   view (This Week / read surfaces): read-only body; an admin gets a LINK to
+//         Enter to write/edit — composers live only on Enter.
+//   edit (the Enter screen): the inline editor. Everyone reads; an admin edits,
+//         and the write is enforced server-side in saveMinutes regardless.
 
 export function MinutesEditor({
   weekEnding,
@@ -12,12 +16,16 @@ export function MinutesEditor({
   updatedByName,
   updatedAtLabel,
   canEdit,
+  view = false,
+  enterHref = '/meeting/enter#minutes',
 }: {
   weekEnding: string;
   initialBody: string;
   updatedByName: string | null;
   updatedAtLabel: string | null;
   canEdit: boolean;
+  view?: boolean;
+  enterHref?: string;
 }) {
   const [editing, setEditing] = useState(false);
   const [body, setBody] = useState(initialBody);
@@ -43,14 +51,22 @@ export function MinutesEditor({
     <section className="mn-card" id="minutes">
       <div className="mn-head">
         <h2>Minutes</h2>
-        {canEdit && !editing && (
-          <button type="button" className="mn-edit" onClick={() => setEditing(true)}>
-            {hasContent ? 'Edit' : 'Write minutes'}
-          </button>
-        )}
+        {canEdit &&
+          (view ? (
+            // View surface: composers live on Enter, so link there.
+            <Link href={enterHref} className="mn-edit">
+              {hasContent ? 'Edit on Enter →' : 'Write minutes on Enter →'}
+            </Link>
+          ) : (
+            !editing && (
+              <button type="button" className="mn-edit" onClick={() => setEditing(true)}>
+                {hasContent ? 'Edit' : 'Write minutes'}
+              </button>
+            )
+          ))}
       </div>
 
-      {editing ? (
+      {!view && editing ? (
         <>
           <textarea
             className="mn-textarea"
@@ -90,7 +106,7 @@ export function MinutesEditor({
       ) : (
         <p className="mn-empty">
           No minutes recorded for this meeting yet.
-          {canEdit ? ' Use “Write minutes” above.' : ''}
+          {canEdit ? (view ? ' Write them on Enter.' : ' Use “Write minutes” above.') : ''}
         </p>
       )}
     </section>

@@ -7,8 +7,6 @@ import { getLockConfig, isLockedAt, describeLock } from '@/lib/lock';
 import { AccountBar } from '@/components/account-bar';
 import { submitReport } from './actions';
 import { AdjustableEntryCard } from '@/components/adjustable-entry';
-import { WinComposer } from '@/components/win-composer';
-import { getPostsForPicker } from '@/lib/stats';
 import { listWins } from '@/lib/wins';
 import { StatsSubNav } from '@/components/stats-subnav';
 
@@ -42,15 +40,8 @@ export default async function ReportPage({
   const lockCfg = await getLockConfig();
   const locked = isLockedAt(weekEnding, lockCfg);
 
-  // Wins-this-week entry (root surface). Area options + the member's own recent
-  // wins for a little in-context list.
-  const [winPicker, recentMine] = await Promise.all([
-    getPostsForPicker(),
-    listWins(member.id, { memberId: member.id }),
-  ]);
-  const winAreas = winPicker.map((p) => ({ id: p.id, label: p.label }));
-  const winDefaultArea = view.heldPosts[0]?.postId ?? '';
-  const winToday = new Date().toISOString().slice(0, 10);
+  // The member's own recent wins — a read-only glance; adding is on Meeting Enter.
+  const recentMine = await listWins(member.id, { memberId: member.id });
   const recentMineTop = recentMine.slice(0, 3);
 
   const qs = (extra: Record<string, string | undefined>) => {
@@ -237,21 +228,15 @@ export default async function ReportPage({
           </section>
         )}
 
-        {/* Wins this week — the member's narrative production, same rhythm as
-            stats. Root only (it is per-member, not per drilled post). */}
+        {/* Wins live on the Meeting section — this is a read-only glance with a
+            link to Enter (composers live only there, one entry screen). */}
         {atRoot && (
           <section className="wins-add wins-add-enter">
             <h3 className="wins-addh">
-              Wins this week
-              <span className="wins-addhint">free text, tagged to an area — add as many as you like</span>
+              Your recent wins
+              <span className="wins-addhint">add wins & minutes on the Meeting tab</span>
             </h3>
-            <WinComposer
-              mode="member"
-              areaOptions={winAreas}
-              defaultAreaId={winDefaultArea}
-              today={winToday}
-            />
-            {recentMineTop.length > 0 && (
+            {recentMineTop.length > 0 ? (
               <ul className="wins-recentmine">
                 {recentMineTop.map((w) => (
                   <li key={w.id}>
@@ -260,9 +245,11 @@ export default async function ReportPage({
                   </li>
                 ))}
               </ul>
+            ) : (
+              <p className="rpt-progress">No wins yet.</p>
             )}
-            <Link href="/wins" className="wins-seeall">
-              See all wins →
+            <Link href="/meeting/enter" className="wins-seeall">
+              Add a win on Enter →
             </Link>
           </section>
         )}

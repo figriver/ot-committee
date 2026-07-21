@@ -71,6 +71,13 @@ export default async function MeetingWeekPage({ params }: { params: Promise<{ we
         </div>
 
         {/* wins for the week, by area (the projection) */}
+        {/* view-only surface — creation lives on Enter */}
+        {isCurrent && (
+          <Link href="/meeting/enter" className="mt-enterbtn">
+            + Add wins / write minutes on Enter
+          </Link>
+        )}
+
         <section className="mt-section">
           <div className="mt-sectionhead">
             <h2>
@@ -82,11 +89,11 @@ export default async function MeetingWeekPage({ params }: { params: Promise<{ we
           </div>
           {winTotal === 0 ? (
             <p className="mt-empty">
-              No wins logged for this week yet. Members add them from{' '}
-              <Link href="/stats" className="gr-emptylink">
-                Enter
-              </Link>{' '}
-              or the Wins page.
+              No wins logged for this week yet.{' '}
+              <Link href="/meeting/enter" className="gr-emptylink">
+                Add one on Enter
+              </Link>
+              .
             </p>
           ) : (
             areas.map((g) => (
@@ -110,13 +117,15 @@ export default async function MeetingWeekPage({ params }: { params: Promise<{ we
           )}
         </section>
 
-        {/* minutes for the week */}
+        {/* minutes for the week — READ ONLY here; admins edit on Enter */}
         <MinutesEditor
           weekEnding={weekEnding}
           initialBody={minutes.body}
           updatedByName={minutes.updatedByName}
           updatedAtLabel={updatedAtLabel}
           canEdit={member.role === 'admin'}
+          view
+          enterHref={`/meeting/enter?week=${weekEnding}`}
         />
       </div>
     </>
