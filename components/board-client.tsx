@@ -298,6 +298,9 @@ function PostRow({ post }: { post: PostWithHolders }) {
           </span>
         )}
         {post.is_vacant && <span className="ob-vacant">HFA</span>}
+        <Link href={`/post/${post.id}`} className="ob-hatlink" title="Open hat / write-up">
+          hat ↗
+        </Link>
         <Caret items={items} />
       </div>
       {post.holders.length > 0 && (
