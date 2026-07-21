@@ -1,6 +1,7 @@
 import 'server-only';
 import { getServiceClient } from '@/lib/supabase/server';
 import { loadHierarchy } from '@/lib/hierarchy';
+import { memberDisplayName } from '@/lib/member-names';
 import type { Member } from '@/lib/types';
 
 // A post's "hat" write-up: the position's Purpose / Duties / Stats / VFP, held as
@@ -24,10 +25,7 @@ export type PostHeader = {
 };
 
 async function nameOf(id: string | null): Promise<string | null> {
-  if (!id) return null;
-  const supa = getServiceClient();
-  const { data } = await supa.from('members').select('name, email').eq('id', id).maybeSingle();
-  return (data?.name as string | null) || (data?.email as string | null) || null;
+  return memberDisplayName(id);
 }
 
 /** Post identity + board context for the detail page header. */

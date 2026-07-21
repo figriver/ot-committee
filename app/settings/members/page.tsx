@@ -3,15 +3,16 @@ import { requireAdmin } from '@/lib/auth';
 import { getServiceClient } from '@/lib/supabase/server';
 import { AccountBar } from '@/components/account-bar';
 import { InviteForm } from './invite-form';
-import { setMemberRole } from './actions';
+import { setMemberRole, setMemberName } from './actions';
 import type { Member } from '@/lib/types';
+import { memberDisplayNames } from '@/lib/member-names';
 
 export const dynamic = 'force-dynamic';
 
 export default async function MembersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; role?: string }>;
+  searchParams: Promise<{ error?: string; role?: string; named?: string }>;
 }) {
   const admin = await requireAdmin();
   const sp = await searchParams;
@@ -19,10 +20,13 @@ export default async function MembersPage({
   const svc = getServiceClient();
   const { data } = await svc
     .from('members')
-    .select('id, email, role, status, auth_uid')
+    .select('id, name, email, role, status, auth_uid')
     .order('role', { ascending: false }) // admins first
     .order('email', { ascending: true });
-  const members = (data ?? []) as Member[];
+  const members = (data ?? []) as (Member & { name: string | null })[];
+  // What each member currently DISPLAYS as — shown as the input's placeholder
+  // so an admin can see the email fallback they are replacing.
+  const boardNames = await memberDisplayNames(members.map((m) => m.id));
   const adminCount = members.filter((m) => m.role === 'admin').length;
 
   return (
@@ -50,6 +54,11 @@ export default async function MembersPage({
         {sp.error && sp.error !== 'last_admin' && (
           <div className="members-err">Couldn’t change that role. Try again.</div>
         )}
+        {sp.named && (
+          <div className="members-ok">
+            Name saved. It shows on bylines, attributions and the chase list.
+          </div>
+        )}
         {sp.role && (
           <div className="members-ok">
             Role updated to {sp.role}. It takes effect on their next page load.
@@ -61,6 +70,7 @@ export default async function MembersPage({
         <table className="members-table">
           <thead>
             <tr>
+              <th>Name</th>
               <th>Email</th>
               <th>Role</th>
               <th>Status</th>
@@ -73,6 +83,23 @@ export default async function MembersPage({
               const isLastAdmin = m.role === 'admin' && adminCount <= 1;
               return (
                 <tr key={m.id}>
+                  <td>
+                    <form action={setMemberName} className="m-nameform">
+                      <input type="hidden" name="member_id" value={m.id} />
+                      <input
+                        type="text"
+                        name="name"
+                        className="m-nameinput"
+                        defaultValue={m.name ?? ''}
+                        placeholder={boardNames.get(m.id) ?? 'Add a name'}
+                        maxLength={120}
+                        aria-label={`Display name for ${m.email}`}
+                      />
+                      <button type="submit" className="m-namebtn">
+                        Save
+                      </button>
+                    </form>
+                  </td>
                   <td className="m-email">
                     {m.email}
                     {isSelf && <span className="m-you">you</span>}
@@ -118,7 +145,7 @@ export default async function MembersPage({
             })}
             {members.length === 0 && (
               <tr>
-                <td colSpan={4} className="m-empty">
+                <td colSpan={5} className="m-empty">
                   No members yet.
                 </td>
               </tr>

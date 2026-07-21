@@ -57,6 +57,33 @@ export async function setMemberRole(formData: FormData): Promise<void> {
 }
 
 /**
+ * Admin-only: set a member's display name — what every byline, attribution and
+ * chase list shows for them (lib/member-names.ts). Members are email-only by
+ * default (0004), so without this they display as a raw email wherever the org
+ * board doesn't already carry a holder name for them.
+ *
+ * Blank clears the name, falling back to the board holder name, then the email.
+ */
+export async function setMemberName(formData: FormData): Promise<void> {
+  await requireAdmin(); // server-side gate (redirects non-admins)
+
+  const memberId = String(formData.get('member_id') ?? '');
+  const raw = String(formData.get('name') ?? '').trim();
+  if (!memberId) redirect('/settings/members?error=bad');
+  if (raw.length > 120) redirect('/settings/members?error=name_long');
+
+  const svc = getServiceClient();
+  const { error } = await svc
+    .from('members')
+    .update({ name: raw || null })
+    .eq('id', memberId);
+  if (error) redirect('/settings/members?error=save');
+
+  revalidatePath('/settings/members');
+  redirect('/settings/members?named=1');
+}
+
+/**
  * Admin-only: add an email to the allowlist as a member and send its magic link.
  * Existing rows are left as-is (an existing admin is not downgraded); the link
  * is (re)sent either way.

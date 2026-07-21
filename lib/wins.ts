@@ -1,6 +1,7 @@
 import 'server-only';
 import { getServiceClient } from '@/lib/supabase/server';
 import { loadPostAreas, areaContext, areaBucket, divisionLabel, type OrgGrain } from '@/lib/area';
+import { memberDisplayNames } from '@/lib/member-names';
 
 // The Wins / Results feed — the committee's narrative production. Reads are open
 // to every logged-in member (wins are shared good news); writes are authorized
@@ -58,12 +59,7 @@ async function hydrate(
   const memberIds = [
     ...new Set(rows.flatMap((r) => [r.member_id, r.created_by]).filter(Boolean) as string[]),
   ];
-  const names = new Map<string, string>();
-  if (memberIds.length) {
-    const { data } = await supa.from('members').select('id, name, email').in('id', memberIds);
-    for (const m of data ?? [])
-      names.set(m.id, (m.name as string | null) || (m.email as string | null) || 'Unknown');
-  }
+  const names = await memberDisplayNames(memberIds);
   return rows.map((r) => {
     const a = r.area_post_id ? areas.get(r.area_post_id) : undefined;
     return {
@@ -143,14 +139,12 @@ export async function recentWins(viewerId: string, limit = 6): Promise<Win[]> {
 /** Members who have at least one win — for the By Member filter. */
 export async function membersWithWins(): Promise<{ id: string; name: string }[]> {
   const supa = getServiceClient();
-  const [{ data: wins }, { data: members }] = await Promise.all([
-    supa.from('wins').select('member_id').not('member_id', 'is', null),
-    supa.from('members').select('id, name, email'),
-  ]);
-  const nameOf = new Map(
-    (members ?? []).map((m) => [m.id, (m.name as string | null) || (m.email as string | null) || 'Unknown']),
-  );
+  const { data: wins } = await supa
+    .from('wins')
+    .select('member_id')
+    .not('member_id', 'is', null);
   const ids = [...new Set((wins ?? []).map((w) => w.member_id as string))];
+  const nameOf = await memberDisplayNames(ids);
   return ids
     .map((id) => ({ id, name: nameOf.get(id) ?? 'Unknown' }))
     .sort((a, b) => a.name.localeCompare(b.name));

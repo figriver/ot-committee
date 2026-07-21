@@ -1482,6 +1482,42 @@ a {
 .m-roleform {
   margin: 0;
 }
+/* Display-name field: what every byline shows for this member. The placeholder
+   carries the current fallback, so an admin sees the email they're replacing. */
+.m-nameform {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+}
+.m-nameinput {
+  font: inherit;
+  font-size: 13px;
+  padding: 4px 8px;
+  min-width: 0;
+  width: 100%;
+  max-width: 190px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+}
+.m-nameinput::placeholder {
+  font-style: italic;
+}
+.m-namebtn {
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  color: var(--ink);
+  white-space: nowrap;
+}
+.m-namebtn:hover {
+  background: var(--surface-sunken);
+}
 .m-rolebtn {
   font: inherit;
   font-size: 12px;

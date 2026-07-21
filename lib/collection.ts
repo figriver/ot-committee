@@ -1,6 +1,7 @@
 import 'server-only';
 import { getServiceClient } from '@/lib/supabase/server';
 import { loadHierarchy } from '@/lib/hierarchy';
+import { memberDisplayNames } from '@/lib/member-names';
 
 // Stats COLLECTION: who has reported for a week, and who has not.
 //
@@ -55,10 +56,14 @@ export async function getCollection(weekEnding: string): Promise<CollectionView>
     if (h.hours != null) hoursBy.set(h.member_id, String(h.hours));
   }
 
+  // Resolved once here so the chase list shows a person's name, not a raw email,
+  // whenever one exists (their own name, else what the board calls them).
+  const display = await memberDisplayNames((memberRes.data ?? []).map((m) => m.id as string));
+
   const rows: MemberReportStatus[] = (memberRes.data ?? [])
     .map((m) => ({
       memberId: m.id,
-      name: (m.name as string | null) ?? null,
+      name: display.get(m.id as string) ?? (m.name as string | null) ?? null,
       email: (m.email as string) ?? '',
       role: m.role as string,
       status: m.status as string,

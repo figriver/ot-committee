@@ -1,5 +1,6 @@
 import 'server-only';
 import { getServiceClient } from '@/lib/supabase/server';
+import { memberDisplayNames } from '@/lib/member-names';
 
 // Meeting minutes: one text record per week (the Thursday meeting). Reads are
 // open to every logged-in member (shared committee record); writing is gated in
@@ -21,14 +22,7 @@ export type MeetingWeek = {
 };
 
 async function nameOf(ids: (string | null)[]): Promise<Map<string, string>> {
-  const unique = [...new Set(ids.filter(Boolean) as string[])];
-  const out = new Map<string, string>();
-  if (!unique.length) return out;
-  const supa = getServiceClient();
-  const { data } = await supa.from('members').select('id, name, email').in('id', unique);
-  for (const m of data ?? [])
-    out.set(m.id, (m.name as string | null) || (m.email as string | null) || 'Unknown');
-  return out;
+  return memberDisplayNames(ids);
 }
 
 /** The minutes for one week (empty shell if none saved yet). */

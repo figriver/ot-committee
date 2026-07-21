@@ -4,6 +4,7 @@ import { currentWeekEnding, addDaysISO } from '@/lib/week';
 import { loadHierarchy } from '@/lib/hierarchy';
 import { getAdjustableWeekly, type BaseKind } from '@/lib/adjustable';
 import type { Member } from '@/lib/types';
+import { memberDisplayNames, memberDisplayName } from '@/lib/member-names';
 
 // The history view: for one subject (a named stat, or a member's hours), the
 // value of every reporting week, newest first, paginated. Weeks are GENERATED
@@ -46,17 +47,9 @@ export type HistoryView = {
   hasOlder: boolean;
 };
 
-/** Display name for a member id: their name, else email, else null. */
+/** Display name for a member id — name, else board holder name, else email. */
 async function memberNames(ids: string[]): Promise<Map<string, string>> {
-  const out = new Map<string, string>();
-  const unique = [...new Set(ids.filter(Boolean))];
-  if (unique.length === 0) return out;
-  const supa = getServiceClient();
-  const { data } = await supa.from('members').select('id, name, email').in('id', unique);
-  for (const m of data ?? []) {
-    out.set(m.id, (m.name as string | null) || (m.email as string | null) || 'Unknown');
-  }
-  return out;
+  return memberDisplayNames(ids);
 }
 
 /** The `PAGE_SIZE` week-endings on `page` (0 = most recent), newest first. */
@@ -343,7 +336,9 @@ export async function getHoursHistory(
     subjectType: 'hours',
     subjectId: targetMemberId,
     title: 'Hours',
-    subtitle: isSelf ? 'Your weekly hours' : (target.name as string) || (target.email as string),
+    subtitle: isSelf
+      ? 'Your weekly hours'
+      : ((await memberDisplayName(targetMemberId)) ?? (target.email as string)),
     unit: 'Hours',
     canEdit,
     rows,
