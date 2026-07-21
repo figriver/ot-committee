@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import { requireMember } from '@/lib/auth';
-import { loadHierarchy } from '@/lib/hierarchy';
 import { getPostsForPicker } from '@/lib/stats';
 import { getMinutes } from '@/lib/minutes';
 import { currentWeekEnding, resolveWeekEnding, formatWeekEnding } from '@/lib/week';
@@ -11,10 +10,10 @@ import { MinutesEditor } from '@/components/minutes-editor';
 
 export const dynamic = 'force-dynamic';
 
-// ENTER — the SINGLE place all Meeting creation happens. Everything else (This
-// Week / Wins / Minutes) is read+filter and links here. Members get the win
-// composer; admins additionally get the unattributed-win composer and the
-// this-week minutes editor. One screen, no mode-switching.
+// MEETING ENTER — meeting-time ADMIN entry only: unattributed wins (good news
+// with no member) and the minutes. A member's own wins are part of their unified
+// weekly report on Stats Enter (/stats), entered alongside hours + stats — so
+// there is no per-member win composer here.
 
 export default async function MeetingEnterPage({
   searchParams,
@@ -25,8 +24,7 @@ export default async function MeetingEnterPage({
   const isAdmin = member.role === 'admin';
   const sp = await searchParams;
 
-  const [h, pickerPosts, current] = await Promise.all([
-    loadHierarchy(),
+  const [pickerPosts, current] = await Promise.all([
     getPostsForPicker(),
     currentWeekEnding(),
   ]);
@@ -35,7 +33,6 @@ export default async function MeetingEnterPage({
   // while composers live only here.
   const week = sp.week ? await resolveWeekEnding(sp.week) : current;
   const areaOptions = pickerPosts.map((p) => ({ id: p.id, label: p.label }));
-  const defaultAreaId = h.postsHeldBy(member.id)[0] ?? '';
   const today = new Date().toISOString().slice(0, 10);
   const minutes = isAdmin ? await getMinutes(week) : null;
   const updatedAtLabel = minutes?.updatedAt
@@ -53,9 +50,10 @@ export default async function MeetingEnterPage({
       <div className="mt-wrap">
         <div className="mt-head">
           <div>
-            <h1>Enter</h1>
+            <h1>Meeting entry</h1>
             <p className="mt-sub">
-              Add wins and record the meeting minutes — everything you create lives here.
+              Meeting-time entry: unattributed good news and the minutes. Your own wins go
+              in your <Link href="/stats" className="gr-emptylink">weekly report</Link>, with your stats.
             </p>
           </div>
           <Link href="/meeting" className="mt-current">
@@ -63,24 +61,25 @@ export default async function MeetingEnterPage({
           </Link>
         </div>
 
-        {/* member: add a win — primary, at top */}
-        <section className="wins-add">
-          <h2 className="wins-addh">
-            Add a win
-            <span className="wins-addhint">free text, tagged to an area — add as many as you like</span>
-          </h2>
-          <WinComposer
-            mode="member"
-            areaOptions={areaOptions}
-            defaultAreaId={defaultAreaId}
-            today={today}
-          />
-        </section>
+        {/* Members report their own wins with their stats on the weekly report;
+            Meeting Enter is meeting-time admin entry only. */}
+        {!isAdmin && (
+          <section className="wins-add">
+            <p className="mt-empty">
+              Nothing to enter here — meeting-time entry (unattributed wins, minutes) is
+              admin-only. Add your own wins on your{' '}
+              <Link href="/stats" className="gr-emptylink">weekly report</Link> alongside your stats.
+            </p>
+          </section>
+        )}
 
-        {/* admin: unattributed win */}
+        {/* admin: unattributed win — meeting-time good news with no member */}
         {isAdmin && (
           <section className="wins-add wins-add-admin">
-            <h2 className="wins-addh">Add unattributed win (admin)</h2>
+            <h2 className="wins-addh">
+              Add unattributed win (admin)
+              <span className="wins-addhint">meeting-time good news with no member behind it</span>
+            </h2>
             <WinComposer mode="unattributed" areaOptions={areaOptions} defaultAreaId="" today={today} />
           </section>
         )}

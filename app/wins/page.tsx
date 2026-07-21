@@ -3,7 +3,6 @@ import { requireMember } from '@/lib/auth';
 import type { Member } from '@/lib/types';
 import { getPostsForPicker } from '@/lib/stats';
 import { listWins, winsByArea, membersWithWins, type WinFilters } from '@/lib/wins';
-import { asGrain } from '@/lib/area';
 import { isWeekEnding } from '@/lib/week';
 import { AccountBar } from '@/components/account-bar';
 import { MeetingSubNav } from '@/components/meeting-subnav';
@@ -78,7 +77,7 @@ export default async function WinsPage({ searchParams }: { searchParams: Promise
                 className={`wvs-pill${v === view ? ' wvs-on' : ''}`}
                 aria-current={v === view ? 'true' : undefined}
               >
-                {v === 'together' ? 'Together' : v === 'area' ? 'By Area' : 'By Member'}
+                {v === 'together' ? 'Together' : v === 'area' ? 'By Division' : 'By Member'}
               </Link>
             );
           })}
@@ -95,7 +94,7 @@ export default async function WinsPage({ searchParams }: { searchParams: Promise
         />
 
         {view === 'area' ? (
-          <ByArea member={member} filters={filters} grain={asGrain(undefined)} />
+          <ByArea member={member} filters={filters} />
         ) : view === 'member' ? (
           <ByMember member={member} filters={filters} memberOpts={memberOpts} chosen={filters.memberId!} />
         ) : (
@@ -124,8 +123,12 @@ async function Together({ member, filters }: { member: Member; filters: WinFilte
   );
 }
 
-async function ByArea({ member, filters, grain }: { member: Member; filters: WinFilters; grain: 'division' | 'department' }) {
-  const groups = await winsByArea(member.id, grain, filters);
+// Wins group by DIVISION only (the 7 divisions). Wins are sparser than stats, so
+// per-department buckets would create many near-empty groups; at the meeting you
+// go division by division. area_post_id still tags a win to its specific post —
+// this only rolls the GROUPING up to division level.
+async function ByArea({ member, filters }: { member: Member; filters: WinFilters }) {
+  const groups = await winsByArea(member.id, 'division', filters);
   if (groups.length === 0) return <p className="wins-empty">No wins match — widen the filters, or <a href="/meeting/enter" className="gr-emptylink">add one on Enter</a>.</p>;
   return (
     <>
