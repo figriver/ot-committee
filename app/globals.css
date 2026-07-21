@@ -59,10 +59,12 @@
   --text-caption: 11.5px; --text-label: 12px; --text-body: 14px;
   --text-card: 15px; --text-h3: 16px; --text-h2: 18px; --text-h1: 22px;
 
-  /* ---- elevation (subtle; lean on spacing + hairline borders) ---- */
-  --shadow-sm: 0 1px 2px rgba(15, 19, 26, 0.05);
-  --shadow: 0 1px 2px rgba(15, 19, 26, 0.05), 0 2px 6px rgba(15, 19, 26, 0.05);
-  --shadow-lg: 0 8px 28px rgba(15, 19, 26, 0.12);
+  /* ---- elevation (subtle; lean on spacing + hairline borders) ----
+     --shadow is the soft "data-card" shadow: close + diffuse, so cards read as
+     gently lifted surfaces rather than hard-outlined boxes (the Sierra look). */
+  --shadow-sm: 0 1px 2px rgba(16, 19, 26, 0.04);
+  --shadow: 0 1px 2px rgba(16, 19, 26, 0.04), 0 3px 10px rgba(16, 19, 26, 0.05);
+  --shadow-lg: 0 8px 28px rgba(16, 19, 26, 0.12);
 
   --font-sans: var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI',
     Roboto, Helvetica, Arial, sans-serif;
@@ -99,8 +101,8 @@
   --graph-axis: #98a0ac;
   --graph-dotring: #16191f;
 
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
-  --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.35);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.35), 0 3px 12px rgba(0, 0, 0, 0.3);
   --shadow-lg: 0 10px 32px rgba(0, 0, 0, 0.55);
 }
 
@@ -556,10 +558,10 @@ a {
 .ob-exec {
   background: var(--text);
   color: var(--accent-contrast);
-  border-radius: 9px;
-  padding: 8px 16px;
+  border-radius: 11px;
+  padding: 11px 20px;
   text-align: center;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+  box-shadow: var(--shadow-sm);
   min-height: 46px;
   display: flex;
   flex-direction: column;
@@ -774,19 +776,19 @@ a {
 /* ---- Division columns (overview) ---- */
 .ob-divcol {
   width: var(--col-w);
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
   display: flex;
   flex-direction: column;
   overflow: hidden;
   min-height: 260px;
   height: 100%;
   text-align: left;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--shadow-sm);
 }
 .ob-divcol-head {
-  padding: 9px 10px;
+  padding: 12px 13px;
   display: flex;
   flex-direction: column;
   gap: 3px;
@@ -819,20 +821,20 @@ a {
   line-height: 1.2;
 }
 .ob-divcol-depts {
-  padding: 8px;
+  padding: 10px;
   display: flex;
   flex-direction: column;
-  gap: 7px;
+  gap: 9px;
   flex: 1 1 auto;
 }
 .ob-deptbox {
-  border: 1px solid var(--line);
-  border-radius: 7px;
-  padding: 7px 9px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 10px 11px;
   background: var(--surface-sunken);
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
   font-size: 12.5px;
 }
 .ob-deptbox.pending {
@@ -859,7 +861,7 @@ a {
   text-decoration: underline;
 }
 .ob-divcol-vfp {
-  padding: 8px 10px;
+  padding: 10px 13px;
   border-top: 3px solid;
   background: var(--surface-sunken);
   font-size: 12px;
@@ -982,9 +984,9 @@ a {
 
 /* ---- Posts / sections / holders ---- */
 .ob-post {
-  border: 1px solid var(--line);
-  border-radius: 7px;
-  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
   background: var(--surface-sunken);
 }
 .ob-post.pending,
@@ -994,7 +996,7 @@ a {
 .ob-post-title {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   font-weight: 600;
   font-size: 12.5px;
 }
@@ -1009,16 +1011,16 @@ a {
   background: var(--warn-bg);
   border: 1px solid var(--warn-border);
   border-radius: 999px;
-  padding: 0 6px;
-  line-height: 15px;
+  padding: 0 7px;
+  line-height: 16px;
   flex: none;
 }
 .ob-holders {
-  margin-top: 5px;
+  margin-top: 7px;
   padding-left: 6px;
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
 }
 .ob-holder {
   display: flex;
@@ -1032,12 +1034,12 @@ a {
   color: var(--muted);
 }
 .ob-section {
-  border: 1px dashed var(--line-strong);
+  border: 1px dashed var(--border-strong);
   border-radius: 8px;
-  padding: 7px;
+  padding: 9px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 7px;
 }
 .ob-section-head {
   font-size: 10.5px;
@@ -1594,17 +1596,18 @@ a {
     gap: 8px;
   }
   .mb-div {
-    border: 1px solid var(--line);
-    border-radius: 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
     overflow: hidden;
-    background: var(--panel);
+    background: var(--surface);
+    box-shadow: var(--shadow-sm);
   }
   .mb-div-head {
     width: 100%;
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 13px 12px;
+    gap: 10px;
+    padding: 14px 14px;
     min-height: 52px;
     border: none;
     cursor: pointer;
@@ -1965,11 +1968,12 @@ a {
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  margin: 14px 0 16px;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  padding: 8px 12px;
+  margin: 16px 0 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  padding: 9px 14px;
 }
 .rpt-weekbtn {
   font-size: 13px;
@@ -1993,10 +1997,11 @@ a {
   gap: 16px;
 }
 .rpt-section {
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  padding: 14px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  padding: 18px 20px;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -2172,9 +2177,9 @@ a {
 }
 /* Division head: a light strip directly under the colored division header. */
 .ob-headbox.division {
-  padding: 7px 10px;
+  padding: 9px 13px;
   background: var(--surface-sunken);
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--border);
 }
 /* Department head: nested inside the department box, under its name. */
 .ob-headbox.department {
@@ -2681,10 +2686,11 @@ a {
    Slice 2c — single-stat graph
    ========================================================================== */
 .gr-card {
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  padding: 14px 14px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  padding: 18px 18px 14px;
   margin-bottom: 18px;
 }
 
@@ -2756,15 +2762,14 @@ a {
   height: auto;
   touch-action: pan-y;
 }
+/* Empty/sparse notes are QUIET: a line of muted text, not a bordered box with
+   one line floating in dead space. An empty card should read calm, not broken. */
 .gr-empty {
   color: var(--muted);
   font-size: 13px;
-  margin: 8px 0 6px;
-  padding: 14px 14px;
-  background: var(--bg);
-  border: 1px dashed var(--line-strong);
-  border-radius: 10px;
-  line-height: 1.5;
+  margin: 2px 0 6px;
+  padding: 6px 2px;
+  line-height: 1.55;
 }
 .gr-empty strong,
 .gr-sparse strong {
@@ -2923,10 +2928,11 @@ a {
 }
 .db-card {
   min-width: 0; /* let a grid child shrink instead of widening the row */
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  padding: 14px 14px 6px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  padding: 20px 20px 14px;
 }
 /* Nothing to plot: size to content instead of stretching to the row height. */
 .db-card-nodata {
@@ -2980,13 +2986,11 @@ a {
   text-decoration: underline;
 }
 .db-empty {
-  margin: 16px 0 0;
-  padding: 14px 16px;
-  background: var(--panel);
-  border: 1px dashed var(--line-strong);
-  border-radius: 12px;
-  font-size: 13.5px;
+  margin: 12px 2px 0;
+  padding: 4px 0;
+  font-size: 13px;
   color: var(--muted);
+  line-height: 1.55;
 }
 
 @media (max-width: 639px) {
@@ -3125,8 +3129,8 @@ a {
   scroll-margin-top: 16px;
 }
 .cm-grouphead {
-  border-bottom: 2px solid var(--line-strong);
-  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 8px;
   margin-bottom: 14px;
 }
 .cm-grouptoggle {
@@ -3202,13 +3206,11 @@ a {
   color: var(--ink);
 }
 .cm-empty {
-  margin: 20px 0 0;
-  padding: 16px;
-  background: var(--panel);
-  border: 1px dashed var(--line-strong);
-  border-radius: 12px;
-  font-size: 13.5px;
+  margin: 14px 2px 0;
+  padding: 4px 0;
+  font-size: 13px;
   color: var(--muted);
+  line-height: 1.55;
 }
 
 @media (max-width: 639px) {
@@ -3609,11 +3611,11 @@ a {
 }
 .db-branchname {
   margin: 0 0 10px;
-  padding-bottom: 6px;
+  padding-bottom: 8px;
   font-size: 15px;
   font-weight: 700;
   color: var(--ink);
-  border-bottom: 2px solid var(--line-strong);
+  border-bottom: 1px solid var(--border);
 }
 .db-cardhead h3 {
   margin: 0;
@@ -3666,7 +3668,7 @@ a {
 
 /* junior cards: one per branch you cover */
 .jr-section {
-  margin-top: 26px;
+  margin-top: 24px;
 }
 .jr-heading {
   display: flex;
@@ -3678,7 +3680,7 @@ a {
   font-size: 15px;
   font-weight: 700;
   color: var(--ink);
-  border-bottom: 2px solid var(--line-strong);
+  border-bottom: 1px solid var(--border);
 }
 .jr-headinghint {
   font-size: 12px;
@@ -3693,17 +3695,18 @@ a {
 .jr-card {
   display: flex;
   flex-direction: column;
-  gap: 5px;
-  padding: 13px 14px;
-  background: var(--panel);
-  border: 1px solid var(--line-strong);
-  border-radius: 12px;
+  gap: 6px;
+  padding: 15px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
   text-decoration: none;
   min-width: 0;
 }
 .jr-card:hover {
-  border-color: var(--accent);
-  box-shadow: 0 1px 4px rgba(37, 99, 235, 0.12);
+  border-color: var(--accent-border);
+  box-shadow: var(--shadow);
 }
 .jr-card-empty {
   background: var(--bg);
@@ -3783,7 +3786,7 @@ a {
    Adjustable-stat entry (base + manual + note)
    ========================================================================== */
 .adj-section {
-  margin-top: 26px;
+  margin-top: 24px;
 }
 .adj-heading {
   display: flex;
@@ -3795,7 +3798,7 @@ a {
   font-size: 15px;
   font-weight: 700;
   color: var(--ink);
-  border-bottom: 2px solid var(--line-strong);
+  border-bottom: 1px solid var(--border);
 }
 .adj-headinghint {
   font-size: 12px;
@@ -3809,10 +3812,11 @@ a {
   align-items: start;
 }
 .adj-card {
-  background: var(--panel);
-  border: 1px solid var(--line-strong);
-  border-radius: 12px;
-  padding: 14px 15px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  padding: 18px;
   min-width: 0;
 }
 .adj-head {
@@ -4218,10 +4222,11 @@ a {
   border-top: 1px solid var(--line);
 }
 .wc-card {
-  padding: 12px 13px;
-  background: var(--panel);
-  border: 1px solid var(--line-strong);
-  border-radius: 12px;
+  padding: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
 }
 .wc-body {
   width: 100%;
@@ -4378,13 +4383,11 @@ a {
   color: var(--muted);
 }
 .wins-empty {
-  margin: 16px 0;
-  padding: 14px 16px;
-  background: var(--panel);
-  border: 1px dashed var(--line-strong);
-  border-radius: 12px;
-  font-size: 13.5px;
+  margin: 10px 0;
+  padding: 2px 0;
+  font-size: 13px;
   color: var(--muted);
+  line-height: 1.55;
 }
 .win-list {
   list-style: none;
@@ -4464,8 +4467,8 @@ a {
   display: flex;
   align-items: baseline;
   gap: 10px;
-  padding-bottom: 6px;
-  border-bottom: 2px solid var(--line-strong);
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
 }
 .wins-areahead h2 {
   margin: 0;
@@ -4586,16 +4589,16 @@ a {
   white-space: nowrap;
 }
 .mt-section {
-  margin-top: 18px;
+  margin-top: 20px;
 }
 .mt-sectionhead {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   gap: 12px;
-  padding-bottom: 6px;
-  margin-bottom: 8px;
-  border-bottom: 2px solid var(--line-strong);
+  padding-bottom: 8px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid var(--border);
 }
 .mt-sectionhead h2 {
   margin: 0;
@@ -4619,22 +4622,21 @@ a {
   text-decoration: none;
 }
 .mt-empty {
-  margin: 12px 0;
-  padding: 14px 16px;
-  background: var(--panel);
-  border: 1px dashed var(--line-strong);
-  border-radius: 12px;
-  font-size: 13.5px;
+  margin: 10px 0 2px;
+  padding: 2px 0;
+  font-size: 13px;
   color: var(--muted);
+  line-height: 1.55;
 }
 
 /* minutes editor */
 .mn-card {
-  margin-top: 26px;
-  padding: 16px;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 12px;
+  margin-top: 20px;
+  padding: 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
   scroll-margin-top: 16px;
 }
 .mn-head {
@@ -4826,15 +4828,19 @@ a {
 /* Meeting: view→Enter affordances */
 .mt-enterbtn {
   display: inline-block;
-  margin: 14px 0 4px;
+  margin: 2px 0 0;
   padding: 9px 16px;
   font-size: 13.5px;
   font-weight: 600;
   color: var(--accent-contrast);
   background: var(--accent);
   border: 1px solid var(--accent);
-  border-radius: 999px;
+  border-radius: var(--radius-sm);
   text-decoration: none;
+}
+.mt-enterbtn:hover {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
 }
 .mt-enterbtn:hover {
   filter: brightness(1.05);
