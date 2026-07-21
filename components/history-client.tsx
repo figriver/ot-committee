@@ -11,6 +11,7 @@ import {
 } from '@/app/stats/history/actions';
 import type { SubjectType } from '@/lib/history';
 import type { Scale, Rollup } from '@/lib/series';
+import type { Range } from '@/lib/range';
 import { StatGraph, type GraphPoint, type GraphNote } from '@/components/stat-graph';
 
 // The value history of one subject (a stat, or a member's hours) as a table:
@@ -58,6 +59,11 @@ type Props = {
   rollupNote: string;
   canSetRollup: boolean;
   lockLabel: string; // e.g. "Wednesday 11:59 PM (America/Chicago)"
+  // graph range window (Piece 3)
+  range: Range;
+  windowFrom: string;
+  windowTo: string;
+  latestWeek: string;
 };
 
 function messageOf(e: unknown): string {
@@ -120,6 +126,10 @@ function ValuesTab({
   canSetRollup,
   isAdmin,
   lockLabel,
+  range,
+  windowFrom,
+  windowTo,
+  latestWeek,
 }: Props) {
   const [editingWeek, setEditingWeek] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -140,6 +150,10 @@ function ValuesTab({
         statId={subjectId}
         basePath={basePath}
         page={page}
+        range={range}
+        windowFrom={windowFrom}
+        windowTo={windowTo}
+        latestWeek={latestWeek}
       />
 
       {!canEdit && (

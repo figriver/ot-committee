@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { requireMember } from '@/lib/auth';
 import { getStatGroups, asGrain, type OrgGrain } from '@/lib/groups';
 import { getStatSeriesBatch, asScale, SCALES, type Scale } from '@/lib/series';
+import { asRange, DEFAULT_RANGE, RANGE_PRESETS, RANGE_LABELS, type Range } from '@/lib/range';
 import { formatDate } from '@/lib/week';
 import { AccountBar } from '@/components/account-bar';
 import { CommitteeBoard, type CommitteeGroup } from '@/components/committee-client';
@@ -23,11 +24,12 @@ export const dynamic = 'force-dynamic';
 export default async function CommitteePage({
   searchParams,
 }: {
-  searchParams: Promise<{ scale?: string; by?: string }>;
+  searchParams: Promise<{ scale?: string; by?: string; range?: string; from?: string; to?: string }>;
 }) {
   const member = await requireMember();
   const sp = await searchParams;
   const scale = asScale(sp.scale);
+  const range = asRange(sp.range);
   const grain: OrgGrain = asGrain(sp.by);
 
   const groups = await getStatGroups(grain);
@@ -35,7 +37,7 @@ export default async function CommitteePage({
   // ONE batched read for every chart on the page, rather than three queries per
   // stat. A committee dashboard grows with the board, so the N+1 would bite.
   const statIds = groups.flatMap((g) => g.stats.map((s) => s.id));
-  const series = await getStatSeriesBatch(statIds, scale, false);
+  const series = await getStatSeriesBatch(statIds, scale, false, range, sp.from, sp.to);
 
   const view: CommitteeGroup[] = groups.map((g) => ({
     key: g.key,
@@ -67,12 +69,14 @@ export default async function CommitteePage({
   }));
 
   const totalStats = view.reduce((n, g) => n + g.cards.length, 0);
-  const href = (next: { scale?: Scale; by?: OrgGrain }) => {
+  const href = (next: { scale?: Scale; by?: OrgGrain; range?: Range }) => {
     const q = new URLSearchParams();
     const s = next.scale ?? scale;
     const b = next.by ?? grain;
+    const r = next.range ?? range;
     if (s !== 'weekly') q.set('scale', s);
     if (b !== 'division') q.set('by', b);
+    if (r !== DEFAULT_RANGE) q.set('range', r);
     const qs = q.toString();
     return qs ? `/committee?${qs}` : '/committee';
   };
@@ -107,6 +111,21 @@ export default async function CommitteePage({
                 {s[0].toUpperCase() + s.slice(1)}
               </Link>
             ))}
+          </div>
+          <div className="cm-ctlgroup" role="group" aria-label="Date range">
+            <span className="cm-ctllabel">Range</span>
+            <div className="gr-ranges">
+              {RANGE_PRESETS.map((r) => (
+                <Link
+                  key={r}
+                  href={href({ range: r })}
+                  className={`gr-range${r === range ? ' gr-range-on' : ''}`}
+                  aria-current={r === range ? 'true' : undefined}
+                >
+                  {RANGE_LABELS[r]}
+                </Link>
+              ))}
+            </div>
           </div>
           <div className="cm-ctlgroup" role="group" aria-label="Group stats by">
             <span className="cm-ctllabel">Group by</span>

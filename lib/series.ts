@@ -3,6 +3,7 @@ import { getServiceClient } from '@/lib/supabase/server';
 import { loadAdjustable, getAdjustableWeekly } from '@/lib/adjustable';
 import { currentWeekEnding, addDaysISO } from '@/lib/week';
 import type { SubjectType } from '@/lib/history';
+import { type Range, DEFAULT_RANGE, RANGE_WEEKS, isIsoDate } from '@/lib/range';
 
 // The graph series for ONE stat (or one member's hours).
 //
@@ -24,8 +25,7 @@ export type Rollup = 'sum' | 'average' | 'last';
 export const SCALES: Scale[] = ['weekly', 'monthly', 'quarterly'];
 export const ROLLUPS: Rollup[] = ['sum', 'average', 'last'];
 
-/** How many periods each scale shows. */
-const WINDOW: Record<Scale, number> = { weekly: 26, monthly: 12, quarterly: 8 };
+const DAY_MS = 86400000;
 
 export type SeriesPoint = {
   key: string;
@@ -45,6 +45,8 @@ export type SeriesView = {
   points: SeriesPoint[];
   notes: GraphNote[];
   canSetRollup: boolean;
+  windowFrom: string; // ISO — first day shown (prefills the custom "from")
+  windowTo: string; // ISO — last day shown (never after the current week)
 };
 
 // ---- date helpers (UTC, on plain YYYY-MM-DD strings) ------------------------
@@ -60,9 +62,9 @@ const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov
 
 // ---- bucket construction ----------------------------------------------------
 
-/** The `WINDOW[scale]` periods ending at the current week, oldest first. */
-function buildBuckets(scale: Scale, latestWeek: string): SeriesPoint[] {
-  const n = WINDOW[scale];
+/** `n` periods of `scale` ending at `endWeek` (never after it), oldest first. */
+function buildBuckets(scale: Scale, endWeek: string, n: number): SeriesPoint[] {
+  const latestWeek = endWeek;
   const anchor = parseISO(latestWeek);
 
   if (scale === 'weekly') {
@@ -120,6 +122,128 @@ function buildBuckets(scale: Scale, latestWeek: string): SeriesPoint[] {
     });
   }
   return out;
+}
+
+// ---- range → (endWeek, period count) ---------------------------------------
+
+/** Largest week-ending ≤ `dateISO` on the grid anchored at `latestWeek`. Clamps
+ *  a custom "to" back onto the weekly grid and never past the current week. */
+function snapEnd(dateISO: string, latestWeek: string): string {
+  if (dateISO >= latestWeek) return latestWeek;
+  const days = Math.round((parseISO(latestWeek).getTime() - parseISO(dateISO).getTime()) / DAY_MS);
+  return addDaysISO(latestWeek, -7 * Math.ceil(days / 7));
+}
+
+/** How many `scale` periods span [fromISO, endWeek] inclusive (≥ 1, capped). */
+function periodCount(scale: Scale, fromISO: string, endWeek: string): number {
+  if (endWeek < fromISO) return 1;
+  if (scale === 'weekly') {
+    const days = Math.round((parseISO(endWeek).getTime() - parseISO(fromISO).getTime()) / DAY_MS);
+    return Math.min(520, Math.max(1, Math.floor(days / 7) + 1));
+  }
+  const a = parseISO(fromISO);
+  const b = parseISO(endWeek);
+  if (scale === 'monthly') {
+    const m = (b.getUTCFullYear() - a.getUTCFullYear()) * 12 + (b.getUTCMonth() - a.getUTCMonth());
+    return Math.min(240, Math.max(1, m + 1));
+  }
+  const qa = a.getUTCFullYear() * 4 + Math.floor(a.getUTCMonth() / 3);
+  const qb = b.getUTCFullYear() * 4 + Math.floor(b.getUTCMonth() / 3);
+  return Math.min(120, Math.max(1, qb - qa + 1));
+}
+
+/** Resolve a Range (+ optional custom from/to) into a concrete bucket window.
+ *  `to` is always clamped to `latestWeek` — the chart never renders the future. */
+function resolveWindow(
+  scale: Scale,
+  range: Range,
+  fromParam: string | undefined,
+  toParam: string | undefined,
+  latestWeek: string,
+  earliestWeek: string | null,
+): { endWeek: string; n: number } {
+  let toISO = latestWeek;
+  let fromISO: string;
+  if (range === 'custom') {
+    toISO = isIsoDate(toParam) && toParam <= latestWeek ? toParam : latestWeek;
+    fromISO =
+      isIsoDate(fromParam) && fromParam <= toISO
+        ? fromParam
+        : addDaysISO(toISO, -RANGE_WEEKS['6m'] * 7);
+  } else if (range === 'all') {
+    fromISO = earliestWeek && earliestWeek < latestWeek
+      ? earliestWeek
+      : addDaysISO(latestWeek, -RANGE_WEEKS['1y'] * 7);
+  } else {
+    fromISO = addDaysISO(latestWeek, -RANGE_WEEKS[range] * 7);
+  }
+  const endWeek = snapEnd(toISO, latestWeek);
+  return { endWeek, n: periodCount(scale, fromISO, endWeek) };
+}
+
+/** Earliest reported week for a subject (for the "All" range). Null if none. */
+async function earliestWeekFor(subjectType: SubjectType, subjectId: string): Promise<string | null> {
+  const supa = getServiceClient();
+  if (subjectType === 'hours') {
+    const { data } = await supa
+      .from('member_hours')
+      .select('week_ending')
+      .eq('member_id', subjectId)
+      .order('week_ending', { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    return data?.week_ending ?? null;
+  }
+  // A plain stat: its own entries. An adjustable stat's base tracks member_hours,
+  // so fall back to the earliest hours week when it has no direct entries.
+  const [entry, adj] = await Promise.all([
+    supa
+      .from('stat_entries')
+      .select('week_ending')
+      .eq('stat_id', subjectId)
+      .order('week_ending', { ascending: true })
+      .limit(1)
+      .maybeSingle(),
+    (await loadAdjustable([subjectId])).get(subjectId),
+  ]);
+  if (entry.data?.week_ending) return entry.data.week_ending;
+  if (adj) {
+    const { data } = await supa
+      .from('member_hours')
+      .select('week_ending')
+      .order('week_ending', { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    return data?.week_ending ?? null;
+  }
+  return null;
+}
+
+/** Earliest reported week across a set of stats (batch "All"). */
+async function earliestWeekForStats(statIds: string[], hasAdjustable: boolean): Promise<string | null> {
+  const supa = getServiceClient();
+  const queries = [
+    supa
+      .from('stat_entries')
+      .select('week_ending')
+      .in('stat_id', statIds)
+      .order('week_ending', { ascending: true })
+      .limit(1)
+      .maybeSingle(),
+  ];
+  if (hasAdjustable) {
+    queries.push(
+      supa
+        .from('member_hours')
+        .select('week_ending')
+        .order('week_ending', { ascending: true })
+        .limit(1)
+        .maybeSingle() as never,
+    );
+  }
+  const results = await Promise.all(queries);
+  const weeks = results.map((r) => r.data?.week_ending).filter(Boolean) as string[];
+  return weeks.length ? weeks.sort()[0] : null;
 }
 
 function reduce(values: number[], rollup: Rollup): number {
@@ -216,6 +340,8 @@ function assembleSeries(
     points,
     notes,
     canSetRollup: canEdit && subjectType === 'stat',
+    windowFrom: points[0]?.start ?? '',
+    windowTo: points[points.length - 1]?.end ?? '',
   };
 }
 
@@ -228,13 +354,21 @@ export async function getStatSeriesBatch(
   statIds: string[],
   scale: Scale,
   canEdit: boolean,
+  range: Range = DEFAULT_RANGE,
+  fromParam?: string,
+  toParam?: string,
 ): Promise<Map<string, SeriesView>> {
   const out = new Map<string, SeriesView>();
   if (statIds.length === 0) return out;
 
   const supa = getServiceClient();
   const latestWeek = await currentWeekEnding();
-  const template = buildBuckets(scale, latestWeek);
+  // "All" needs the earliest week across the set; other ranges don't query it.
+  const adjustableSet = await loadAdjustable(statIds);
+  const earliest =
+    range === 'all' ? await earliestWeekForStats(statIds, adjustableSet.size > 0) : null;
+  const { endWeek, n } = resolveWindow(scale, range, fromParam, toParam, latestWeek, earliest);
+  const template = buildBuckets(scale, endWeek, n);
   const from = template[0].start;
   const to = template[template.length - 1].end;
 
@@ -274,9 +408,9 @@ export async function getStatSeriesBatch(
 
   // Adjustable stats don't live in stat_entries — their weekly value is
   // base+manual (lib/adjustable.ts). Compute those and use them instead, so the
-  // graph and the report/history agree on the same total.
-  const adjustable = await loadAdjustable(statIds);
-  for (const [id, stat] of adjustable) {
+  // graph and the report/history agree on the same total. (adjustableSet was
+  // already loaded above for the "All" range.)
+  for (const [id, stat] of adjustableSet) {
     weeklyById.set(id, await getAdjustableWeekly(stat, from, to));
   }
 
@@ -311,10 +445,15 @@ export async function getSeries(
   subjectId: string,
   scale: Scale,
   canEdit: boolean,
+  range: Range = DEFAULT_RANGE,
+  fromParam?: string,
+  toParam?: string,
 ): Promise<SeriesView> {
   const supa = getServiceClient();
   const latestWeek = await currentWeekEnding();
-  const points = buildBuckets(scale, latestWeek);
+  const earliest = range === 'all' ? await earliestWeekFor(subjectType, subjectId) : null;
+  const { endWeek, n } = resolveWindow(scale, range, fromParam, toParam, latestWeek, earliest);
+  const points = buildBuckets(scale, endWeek, n);
   const from = points[0].start;
   const to = points[points.length - 1].end;
 

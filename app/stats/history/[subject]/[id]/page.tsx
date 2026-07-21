@@ -3,8 +3,9 @@ import { notFound } from 'next/navigation';
 import { requireMember } from '@/lib/auth';
 import { getStatHistory, getHoursHistory, type SubjectType } from '@/lib/history';
 import { getSeries, asScale } from '@/lib/series';
+import { asRange } from '@/lib/range';
 import { getLockConfig, isLockedAt, describeLock } from '@/lib/lock';
-import { formatWeekEnding, formatDate } from '@/lib/week';
+import { formatWeekEnding, formatDate, currentWeekEnding } from '@/lib/week';
 import { AccountBar } from '@/components/account-bar';
 import { HistoryClient } from '@/components/history-client';
 
@@ -19,7 +20,14 @@ export default async function HistoryPage({
   searchParams,
 }: {
   params: Promise<{ subject: string; id: string }>;
-  searchParams: Promise<{ tab?: string; page?: string; scale?: string }>;
+  searchParams: Promise<{
+    tab?: string;
+    page?: string;
+    scale?: string;
+    range?: string;
+    from?: string;
+    to?: string;
+  }>;
 }) {
   const member = await requireMember();
   const { subject, id } = await params;
@@ -48,9 +56,12 @@ export default async function HistoryPage({
     updatedBy: r.updatedBy,
     locked: isLockedAt(r.weekEnding, lockCfg),
   }));
-  // The graph reads the same entries as the table, over its own (longer) window.
+  // The graph reads the same entries as the table, over its own selectable
+  // window (Piece 3: scale = granularity, range = window, scroll = pan).
   const scale = asScale(sp.scale);
-  const series = await getSeries(subjectType, id, scale, view.canEdit);
+  const range = asRange(sp.range);
+  const latestWeek = await currentWeekEnding();
+  const series = await getSeries(subjectType, id, scale, view.canEdit, range, sp.from, sp.to);
   const graphNotes = series.notes.map((n) => ({
     id: n.id,
     date: n.date,
@@ -104,6 +115,10 @@ export default async function HistoryPage({
           rollupNote={series.rollupNote}
           canSetRollup={series.canSetRollup}
           lockLabel={describeLock(lockCfg)}
+          range={range}
+          windowFrom={series.windowFrom}
+          windowTo={series.windowTo}
+          latestWeek={latestWeek}
         />
       </div>
     </>

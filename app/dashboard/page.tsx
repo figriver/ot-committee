@@ -3,6 +3,7 @@ import { requireMember } from '@/lib/auth';
 import { getMyDashboard } from '@/lib/dashboard';
 import { recentWins } from '@/lib/wins';
 import { asScale, SCALES, type Scale } from '@/lib/series';
+import { asRange, DEFAULT_RANGE, RANGE_PRESETS, RANGE_LABELS, type Range } from '@/lib/range';
 import { formatDate } from '@/lib/week';
 import { AccountBar } from '@/components/account-bar';
 import { StatGraph } from '@/components/stat-graph';
@@ -26,13 +27,31 @@ export const dynamic = 'force-dynamic';
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ scale?: string }>;
+  searchParams: Promise<{ scale?: string; range?: string; from?: string; to?: string }>;
 }) {
   const member = await requireMember();
   const sp = await searchParams;
   const scale = asScale(sp.scale);
+  const range = asRange(sp.range);
 
-  const { cards, postCount, statCount, coveredCount } = await getMyDashboard(member, scale);
+  const { cards, postCount, statCount, coveredCount } = await getMyDashboard(
+    member,
+    scale,
+    range,
+    sp.from,
+    sp.to,
+  );
+
+  // One page-level control drives every card; preserve the other axis in links.
+  const hrefWith = (over: { scale?: Scale; range?: Range }) => {
+    const p = new URLSearchParams();
+    const s = over.scale ?? scale;
+    const r = over.range ?? range;
+    if (s !== 'weekly') p.set('scale', s);
+    if (r !== DEFAULT_RANGE) p.set('range', r);
+    const qs = p.toString();
+    return qs ? `/dashboard?${qs}` : '/dashboard';
+  };
   const recent = await recentWins(member.id, 6);
 
   // Group by the branch each stat reaches this member through — the same
@@ -90,17 +109,37 @@ export default async function DashboardPage({
           </section>
         )}
 
-        <div className="db-scales" role="group" aria-label="Time scale">
-          {SCALES.map((s: Scale) => (
-            <Link
-              key={s}
-              href={s === 'weekly' ? '/dashboard' : `/dashboard?scale=${s}`}
-              className={`gr-scale${s === scale ? ' gr-scale-on' : ''}`}
-              aria-current={s === scale ? 'true' : undefined}
-            >
-              {s[0].toUpperCase() + s.slice(1)}
-            </Link>
-          ))}
+        <div className="db-controls">
+          <div className="gr-ctlseg">
+            <span className="gr-ctllabel">Scale</span>
+            <div className="db-scales" role="group" aria-label="Time scale">
+              {SCALES.map((s: Scale) => (
+                <Link
+                  key={s}
+                  href={hrefWith({ scale: s })}
+                  className={`gr-scale${s === scale ? ' gr-scale-on' : ''}`}
+                  aria-current={s === scale ? 'true' : undefined}
+                >
+                  {s[0].toUpperCase() + s.slice(1)}
+                </Link>
+              ))}
+            </div>
+          </div>
+          <div className="gr-ctlseg">
+            <span className="gr-ctllabel">Range</span>
+            <div className="gr-ranges" role="group" aria-label="Date range">
+              {RANGE_PRESETS.map((r) => (
+                <Link
+                  key={r}
+                  href={hrefWith({ range: r })}
+                  className={`gr-range${r === range ? ' gr-range-on' : ''}`}
+                  aria-current={r === range ? 'true' : undefined}
+                >
+                  {RANGE_LABELS[r]}
+                </Link>
+              ))}
+            </div>
+          </div>
         </div>
 
         {branches.map((b) => (

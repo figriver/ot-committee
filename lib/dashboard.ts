@@ -5,6 +5,7 @@ import { loadAdjustable, getWeekBreakdown, type BaseKind } from '@/lib/adjustabl
 import { currentWeekEnding } from '@/lib/week';
 import { getLockConfig, isLockedAt } from '@/lib/lock';
 import { getSeries, getStatSeriesBatch, type Scale, type SeriesView } from '@/lib/series';
+import { type Range, DEFAULT_RANGE } from '@/lib/range';
 import type { SubjectType } from '@/lib/history';
 import type { Member } from '@/lib/types';
 
@@ -65,6 +66,9 @@ export type DashboardView = {
 export async function getMyDashboard(
   member: Member,
   scale: Scale,
+  range: Range = DEFAULT_RANGE,
+  fromParam?: string,
+  toParam?: string,
 ): Promise<DashboardView> {
   // EFFECTIVE holder, not direct holder: the dashboard shows what this member is
   // accountable for — their own posts plus every unfilled branch rolling up to
@@ -74,11 +78,14 @@ export async function getMyDashboard(
   const mine = h.statsFor(member.id);
   const heldPosts = new Set(h.postsHeldBy(member.id));
 
-  const hoursSeries = await getSeries('hours', member.id, scale, true);
+  const hoursSeries = await getSeries('hours', member.id, scale, true, range, fromParam, toParam);
   const statSeries = await getStatSeriesBatch(
     mine.map((s) => s.id),
     scale,
     true,
+    range,
+    fromParam,
+    toParam,
   );
 
   // ---- current-week state for the inline "update this week" control ----------

@@ -2,8 +2,10 @@
 
 import { useEffect, useRef, useState, useTransition } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { setStatRollup } from '@/app/stats/history/actions';
 import type { Scale, Rollup } from '@/lib/series';
+import { type Range, DEFAULT_RANGE, RANGE_PRESETS, RANGE_LABELS } from '@/lib/range';
 
 // A single-series line chart, hand-drawn in SVG (no chart lib — this codebase
 // carries no UI dependencies).
@@ -49,6 +51,14 @@ type Props = {
    * page and passes false here.
    */
   showControls?: boolean;
+  // Date-range window (Piece 3). Only used to render the per-chart range control
+  // when showControls is on; the points themselves are already windowed server
+  // side. Optional so the dashboards (which own a page-level range selector) need
+  // not thread them per card.
+  range?: Range;
+  windowFrom?: string;
+  windowTo?: string;
+  latestWeek?: string; // current week-ending — the hard right edge (no future)
 };
 
 // Theme-aware via CSS vars: --graph-rising flips to near-white in dark mode so
@@ -106,9 +116,25 @@ export function StatGraph({
   basePath,
   page,
   showControls = true,
+  range = DEFAULT_RANGE,
+  windowFrom,
+  windowTo,
+  latestWeek,
 }: Props) {
+  const router = useRouter();
   const svgRef = useRef<SVGSVGElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [customOpen, setCustomOpen] = useState(range === 'custom');
+  const [cFrom, setCFrom] = useState(windowFrom ?? '');
+  const [cTo, setCTo] = useState(windowTo ?? '');
+
+  const applyCustom = (f: string, t: string) => {
+    setCFrom(f);
+    setCTo(t);
+    // Navigate only with a complete, ordered range; the server clamps the "to"
+    // to the current week regardless, so the future can never be requested.
+    if (f && t && f <= t) router.push(hrefFor({ range: 'custom', from: f, to: t }));
+  };
   const [hover, setHover] = useState<
     { kind: 'point'; i: number } | { kind: 'note'; id: string } | null
   >(null);
@@ -120,10 +146,26 @@ export function StatGraph({
   useEffect(() => {
     const el = scrollRef.current;
     if (el && el.scrollWidth > el.clientWidth) el.scrollLeft = el.scrollWidth;
-  }, [scale, points.length]);
+  }, [scale, range, points.length]);
 
-  const scaleHref = (s: Scale) =>
-    `${basePath}?scale=${s}${page ? `&page=${page}` : ''}`;
+  // One href builder for scale + range so each control preserves the other (and
+  // the table's page). Range is omitted at its default to keep URLs clean.
+  const hrefFor = (opts: { scale?: Scale; range?: Range; from?: string; to?: string }) => {
+    const s = opts.scale ?? scale;
+    const r = opts.range ?? range;
+    const sp = new URLSearchParams();
+    sp.set('scale', s);
+    if (r !== DEFAULT_RANGE) sp.set('range', r);
+    if (r === 'custom') {
+      const f = opts.from ?? windowFrom;
+      const t = opts.to ?? windowTo;
+      if (f) sp.set('from', f);
+      if (t) sp.set('to', t);
+    }
+    if (page) sp.set('page', String(page));
+    return `${basePath}?${sp.toString()}`;
+  };
+  const scaleHref = (s: Scale) => hrefFor({ scale: s });
 
   const reported = points.filter((p) => p.value != null) as (GraphPoint & { value: number })[];
   const W = Math.max(600, points.length * 26);
@@ -220,17 +262,46 @@ export function StatGraph({
         hidden={!showControls && !(canSetRollup && scale !== 'weekly')}
       >
         {showControls && (
-          <div className="gr-scales" role="group" aria-label="Time scale">
-            {(['weekly', 'monthly', 'quarterly'] as Scale[]).map((s) => (
-              <Link
-                key={s}
-                href={scaleHref(s)}
-                className={`gr-scale${s === scale ? ' gr-scale-on' : ''}`}
-                aria-current={s === scale ? 'true' : undefined}
-              >
-                {s[0].toUpperCase() + s.slice(1)}
-              </Link>
-            ))}
+          <div className="gr-ctlmain">
+            <div className="gr-ctlseg">
+              <span className="gr-ctllabel">Scale</span>
+              <div className="gr-scales" role="group" aria-label="Time scale">
+                {(['weekly', 'monthly', 'quarterly'] as Scale[]).map((s) => (
+                  <Link
+                    key={s}
+                    href={scaleHref(s)}
+                    className={`gr-scale${s === scale ? ' gr-scale-on' : ''}`}
+                    aria-current={s === scale ? 'true' : undefined}
+                  >
+                    {s[0].toUpperCase() + s.slice(1)}
+                  </Link>
+                ))}
+              </div>
+            </div>
+            <div className="gr-ctlseg">
+              <span className="gr-ctllabel">Range</span>
+              <div className="gr-ranges" role="group" aria-label="Date range">
+                {RANGE_PRESETS.map((r) => (
+                  <Link
+                    key={r}
+                    href={hrefFor({ range: r })}
+                    className={`gr-range${r === range ? ' gr-range-on' : ''}`}
+                    aria-current={r === range ? 'true' : undefined}
+                  >
+                    {RANGE_LABELS[r]}
+                  </Link>
+                ))}
+                <button
+                  type="button"
+                  className={`gr-range gr-range-btn${range === 'custom' ? ' gr-range-on' : ''}`}
+                  aria-pressed={range === 'custom'}
+                  aria-expanded={customOpen}
+                  onClick={() => setCustomOpen((o) => !o)}
+                >
+                  {RANGE_LABELS.custom}
+                </button>
+              </div>
+            </div>
           </div>
         )}
         {canSetRollup && scale !== 'weekly' && (
@@ -253,6 +324,31 @@ export function StatGraph({
             </select>
           </label>
         )}
+        {showControls && (customOpen || range === 'custom') && (
+          <div className="gr-customrow">
+            <label className="gr-customlbl">
+              From
+              <input
+                type="date"
+                className="gr-customdate"
+                value={cFrom}
+                max={cTo || latestWeek}
+                onChange={(e) => applyCustom(e.target.value, cTo)}
+              />
+            </label>
+            <label className="gr-customlbl">
+              To
+              <input
+                type="date"
+                className="gr-customdate"
+                value={cTo}
+                max={latestWeek}
+                onChange={(e) => applyCustom(cFrom, e.target.value)}
+              />
+            </label>
+            <span className="gr-customhint">no future dates</span>
+          </div>
+        )}
       </div>
 
       {reported.length === 0 ? (
@@ -266,7 +362,10 @@ export function StatGraph({
       ) : (
         <>
           <div className="gr-scroll" ref={scrollRef}>
-            <div className="gr-plotwrap">
+            {/* Hold ~26px per point so a wide range (e.g. All = 170 weeks) renders
+                at a readable density and the container SCROLLS/pans, instead of
+                squishing every point to fit 100%. Narrow windows still fill. */}
+            <div className="gr-plotwrap" style={{ minWidth: `${W}px` }}>
               <svg
                 ref={svgRef}
                 className="gr-svg"
