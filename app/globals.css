@@ -1,23 +1,111 @@
+/* ==========================================================================
+   DESIGN TOKENS — the single source of truth for chrome (see DESIGN.md).
+   Calm neutral chrome + one desaturated-blue accent, in light AND dark. The org
+   board's seven division FLASH colors are CONTENT colors (set per-division in
+   the DB, applied only to board cards) — they are NOT tokens and never touch
+   nav/buttons/surfaces. Old var names (--panel/--ink/--muted/--line…) are kept
+   as ALIASES so every existing component inherits theming for free.
+   ========================================================================== */
 :root {
-  /* The app is a light theme. Declaring this stops browsers (Safari/Firefox in
-     OS dark mode) from applying their dark UA styling to form controls — which
-     is what turned inline-edit inputs into white-text-on-white. */
   color-scheme: light;
 
-  --bg: #f4f5f7;
-  --panel: #ffffff;
-  --ink: #1f2937;
-  --muted: #6b7280;
-  --line: #e5e7eb;
-  --line-strong: #d1d5db;
-  --accent: #2563eb;
-  --danger: #b91c1c;
+  /* ---- neutral surfaces & text (light) ---- */
+  --bg: #f6f7f9;              /* app background */
+  --surface: #ffffff;        /* cards, nav, inputs */
+  --surface-raised: #ffffff; /* menus, popovers */
+  --surface-sunken: #f1f3f6; /* filter bars, insets, code */
+  --border: #e8eaee;         /* hairline separators */
+  --border-strong: #d7dae0;  /* input borders, dividers */
+  --heading: #10131a;        /* page/section headings */
+  --text: #1c2029;           /* body */
+  --muted: #666d79;          /* secondary text */
+  --text-subtle: #98a0ac;    /* captions, disabled */
+
+  /* ---- accent (a slightly-desaturated professional blue) ---- */
+  --accent: #3a63d0;
+  --accent-hover: #2f52b3;
+  --accent-contrast: #ffffff; /* text/icons ON accent */
+  --accent-subtle: #eef2fc;   /* active-nav / selected bg */
+  --accent-border: #cdd9f4;
+  --link: #3a63d0;
+
+  /* ---- semantic status (each: solid / bg tint / text / border) ---- */
+  --success: #12905f;  --success-bg: #e9f6f0; --success-text: #0b5a40; --success-border: #a7dcc6;
+  --warn: #b07816;     --warn-bg: #fbf4e6;    --warn-text: #855611;    --warn-border: #ead9a6;
+  --danger: #cf4141;   --danger-bg: #fceded;  --danger-text: #932a2a;  --danger-border: #eec2c2;
+
+  /* ---- data-viz ink (polarity meaning preserved; ink follows theme) ---- */
+  --graph-rising: #1c2029;   /* up / level — near-ink */
+  --graph-falling: #cf4141;  /* down — danger red */
+  --graph-grid: #e8eaee;
+  --graph-axis: #666d79;
+  --graph-dotring: #ffffff;  /* dot halo = card surface */
+
+  /* ---- back-compat aliases (do not remove — components use these names) ---- */
+  --panel: var(--surface);
+  --ink: var(--text);
+  --line: var(--border);
+  --line-strong: var(--border-strong);
+
+  /* ---- spacing scale (4-based rhythm) ---- */
+  --space-1: 4px;  --space-2: 8px;  --space-3: 12px; --space-4: 16px;
+  --space-5: 20px; --space-6: 24px; --space-8: 32px; --space-10: 40px;
+  --space-12: 48px; --space-16: 64px;
+
+  /* ---- radius ---- */
+  --radius-sm: 6px; --radius: 10px; --radius-lg: 14px; --radius-pill: 999px;
+
+  /* ---- type scale ---- */
+  --text-caption: 11.5px; --text-label: 12px; --text-body: 14px;
+  --text-card: 15px; --text-h3: 16px; --text-h2: 18px; --text-h1: 22px;
+
+  /* ---- elevation (subtle; lean on spacing + hairline borders) ---- */
+  --shadow-sm: 0 1px 2px rgba(15, 19, 26, 0.05);
+  --shadow: 0 1px 2px rgba(15, 19, 26, 0.05), 0 2px 6px rgba(15, 19, 26, 0.05);
+  --shadow-lg: 0 8px 28px rgba(15, 19, 26, 0.12);
+
+  --font-sans: var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI',
+    Roboto, Helvetica, Arial, sans-serif;
 }
 
-/* Every text field is a light field, so force dark text/caret regardless of the
-   (possibly dark) box it sits in AND regardless of the viewer's OS dark mode.
-   -webkit-text-fill-color is what actually paints the glyphs in WebKit, so it
-   must be set too — `color` alone can be overridden by the UA in dark mode. */
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  --bg: #0d0f13;
+  --surface: #16191f;
+  --surface-raised: #1c2027;
+  --surface-sunken: #101318;
+  --border: #262b33;
+  --border-strong: #363c46;
+  --heading: #f2f4f8;
+  --text: #e3e6ec;
+  --muted: #98a0ac;
+  --text-subtle: #6b727e;
+
+  --accent: #6a91ee;
+  --accent-hover: #7ea0f1;
+  --accent-contrast: #0d0f13;
+  --accent-subtle: #18233a;
+  --accent-border: #2f4472;
+  --link: #83a6f3;
+
+  --success: #35bb8b; --success-bg: #12241d; --success-text: #82dcb6; --success-border: #245842;
+  --warn: #dba746;    --warn-bg: #241d10;    --warn-text: #e8c47b;    --warn-border: #574722;
+  --danger: #e26d6d;  --danger-bg: #241414;  --danger-text: #f1abab;  --danger-border: #5b3030;
+
+  --graph-rising: #e3e6ec;
+  --graph-falling: #e26d6d;
+  --graph-grid: #262b33;
+  --graph-axis: #98a0ac;
+  --graph-dotring: #16191f;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 10px 32px rgba(0, 0, 0, 0.55);
+}
+
+/* Form controls follow the theme: surface bg + body text, muted placeholder.
+   -webkit-text-fill-color must track `color` or WebKit repaints glyphs. */
 input,
 textarea,
 select,
@@ -28,18 +116,26 @@ select,
 .stx-input,
 .stx-select,
 .rpt-input {
-  color: #111827;
-  -webkit-text-fill-color: #111827;
-  caret-color: #111827;
-  background-color: #fff;
-  color-scheme: light;
+  color: var(--text);
+  -webkit-text-fill-color: var(--text);
+  caret-color: var(--accent);
+  background-color: var(--surface);
 }
-/* Keep placeholders muted (the text-fill above would otherwise darken them). */
 input::placeholder,
 textarea::placeholder {
-  color: #6b7280;
-  -webkit-text-fill-color: #6b7280;
+  color: var(--text-subtle);
+  -webkit-text-fill-color: var(--text-subtle);
   opacity: 1;
+}
+/* Focus ring — one consistent accent ring across every interactive control. */
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+  border-radius: var(--radius-sm);
 }
 
 * {
@@ -54,11 +150,12 @@ body {
 
 body {
   background: var(--bg);
-  color: var(--ink);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica,
-    Arial, sans-serif;
-  font-size: 14px;
-  line-height: 1.4;
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: var(--text-body);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 a {
@@ -227,7 +324,7 @@ a {
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: 8px 9px;
-  background: #fcfcfd;
+  background: var(--surface-sunken);
   margin-bottom: 8px;
 }
 
@@ -243,9 +340,9 @@ a {
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: #9a6a00;
-  background: #fef3c7;
-  border: 1px solid #fde68a;
+  color: var(--warn-text);
+  background: var(--warn-bg);
+  border: 1px solid var(--warn-border);
   border-radius: 999px;
   padding: 0 6px;
   line-height: 16px;
@@ -264,7 +361,7 @@ a {
   align-items: center;
   gap: 6px;
   font-size: 13px;
-  color: #374151;
+  color: var(--text);
 }
 
 .holder::before {
@@ -275,7 +372,7 @@ a {
 .dept-vfp {
   border-top: 1px solid var(--line);
   padding: 10px 12px;
-  background: #fbfbfc;
+  background: var(--surface-sunken);
   border-bottom-left-radius: 10px;
   border-bottom-right-radius: 10px;
 }
@@ -306,7 +403,7 @@ a {
 }
 
 .editable:hover {
-  background: #eef2ff;
+  background: var(--accent-subtle);
   box-shadow: inset 0 -1px 0 var(--accent);
 }
 
@@ -315,7 +412,7 @@ a {
 }
 
 .editable .placeholder {
-  color: #9ca3af;
+  color: var(--text-subtle);
   font-style: italic;
 }
 
@@ -324,17 +421,17 @@ a {
   font: inherit;
   /* Always a white field, so force dark text — never inherit the (possibly
      white) text color of a dark division header / exec box / VFP bar. */
-  color: #111827;
+  color: var(--heading);
   width: 100%;
   border: 1px solid var(--accent);
   border-radius: 5px;
   padding: 3px 5px;
-  background: #fff;
+  background: var(--surface);
   outline: none;
 }
 .edit-input::placeholder,
 .edit-textarea::placeholder {
-  color: #6b7280;
+  color: var(--muted);
   opacity: 1;
 }
 
@@ -354,7 +451,7 @@ a {
   font: inherit;
   font-size: 12px;
   border: 1px solid var(--line-strong);
-  background: #fff;
+  background: var(--surface);
   color: var(--ink);
   border-radius: 6px;
   padding: 2px 7px;
@@ -363,7 +460,7 @@ a {
 }
 
 .btn:hover:not(:disabled) {
-  background: #f3f4f6;
+  background: var(--surface-sunken);
 }
 
 .btn:disabled {
@@ -378,23 +475,23 @@ a {
 
 .btn.danger {
   color: var(--danger);
-  border-color: #f3c8c8;
+  border-color: var(--danger-border);
 }
 
 .btn.danger:hover:not(:disabled) {
-  background: #fef2f2;
+  background: var(--danger-bg);
 }
 
 .btn.add {
   color: var(--accent);
-  border-color: #c7d7fb;
+  border-color: var(--accent-border);
   border-style: dashed;
   width: 100%;
   text-align: center;
 }
 
 .btn.add:hover:not(:disabled) {
-  background: #eff4ff;
+  background: var(--accent-subtle);
 }
 
 .row-tools {
@@ -457,8 +554,8 @@ a {
 
 /* ---- Executive tier (nodes) ---- */
 .ob-exec {
-  background: #1f2937;
-  color: #fff;
+  background: var(--text);
+  color: var(--accent-contrast);
   border-radius: 9px;
   padding: 8px 16px;
   text-align: center;
@@ -469,8 +566,8 @@ a {
   justify-content: center;
 }
 .ob-exec.chairman {
-  background: #111827;
-  border: 1px solid #374151;
+  background: var(--heading);
+  border: 1px solid var(--text);
   min-width: 240px;
 }
 /* All exec-tier boxes share one height so their division GROUPS start at the same
@@ -485,8 +582,8 @@ a {
   max-width: 320px;
 }
 .ob-exec.ob-exec-orphan {
-  background: #4b5563;
-  border: 1px dashed #9ca3af;
+  background: var(--text);
+  border: 1px dashed var(--text-subtle);
   min-width: 220px;
   opacity: 0.92;
 }
@@ -529,10 +626,10 @@ a {
   line-height: 1.2;
 }
 .ob-holderline.dark .ob-holderline-name {
-  color: #f9fafb;
+  color: var(--surface-sunken);
 }
 .ob-holderline.light .ob-holderline-name {
-  color: #111827;
+  color: var(--heading);
 }
 .ob-holderline.pending {
   opacity: 0.55;
@@ -650,7 +747,7 @@ a {
   font-size: 12px;
   font-weight: 600;
   color: var(--muted);
-  background: #fbfbfc;
+  background: var(--surface-sunken);
   text-align: center;
   display: flex;
   flex-direction: column;
@@ -732,7 +829,7 @@ a {
   border: 1px solid var(--line);
   border-radius: 7px;
   padding: 7px 9px;
-  background: #fbfbfc;
+  background: var(--surface-sunken);
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -764,17 +861,17 @@ a {
 .ob-divcol-vfp {
   padding: 8px 10px;
   border-top: 3px solid;
-  background: #fbfbfc;
+  background: var(--surface-sunken);
   font-size: 12px;
-  color: #374151;
+  color: var(--text);
 }
 .ob-board-vfp {
   margin-top: 18px;
   width: 100%;
   border-radius: 10px;
   padding: 14px 18px;
-  background: #111827;
-  color: #f9fafb;
+  background: var(--heading);
+  color: var(--surface-sunken);
   font-size: 13.5px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
 }
@@ -807,8 +904,8 @@ a {
   margin-bottom: 12px;
 }
 .ob-senior {
-  background: #1f2937;
-  color: #fff;
+  background: var(--text);
+  color: var(--accent-contrast);
   border-radius: 9px;
   border: 2px solid;
   padding: 8px 18px;
@@ -870,11 +967,11 @@ a {
 .ob-deptcol-vfp {
   border-top: 1px solid var(--line);
   padding: 9px 11px;
-  background: #fbfbfc;
+  background: var(--surface-sunken);
   font-size: 12.5px;
 }
 .ob-vfp-val {
-  color: #374151;
+  color: var(--text);
 }
 .ob-division-vfp {
   margin-top: 14px;
@@ -888,7 +985,7 @@ a {
   border: 1px solid var(--line);
   border-radius: 7px;
   padding: 6px 8px;
-  background: #fcfcfd;
+  background: var(--surface-sunken);
 }
 .ob-post.pending,
 .ob-holder.pending {
@@ -908,9 +1005,9 @@ a {
   font-size: 9px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: #9a6a00;
-  background: #fef3c7;
-  border: 1px solid #fde68a;
+  color: var(--warn-text);
+  background: var(--warn-bg);
+  border: 1px solid var(--warn-border);
   border-radius: 999px;
   padding: 0 6px;
   line-height: 15px;
@@ -928,7 +1025,7 @@ a {
   align-items: center;
   gap: 5px;
   font-size: 12px;
-  color: #374151;
+  color: var(--text);
 }
 .ob-holder::before {
   content: '•';
@@ -962,7 +1059,7 @@ a {
   padding: 4px 2px;
 }
 .ob-muted {
-  color: #6b7280;
+  color: var(--muted);
   font-style: italic;
 }
 
@@ -983,10 +1080,10 @@ a {
   background: rgba(120, 120, 120, 0.16);
 }
 .caret.dark {
-  color: #374151;
+  color: var(--text);
 }
 .caret.light {
-  color: #fff;
+  color: var(--accent-contrast);
 }
 
 /* ---- Context menu ---- */
@@ -997,7 +1094,7 @@ a {
   margin: 0;
   padding: 5px;
   list-style: none;
-  background: #fff;
+  background: var(--surface);
   border: 1px solid var(--line-strong);
   border-radius: 9px;
   box-shadow: 0 10px 34px rgba(0, 0, 0, 0.18);
@@ -1010,16 +1107,16 @@ a {
   color: var(--ink);
 }
 .ctx-item:hover {
-  background: #eef2ff;
+  background: var(--accent-subtle);
 }
 .ctx-item.danger {
   color: var(--danger);
 }
 .ctx-item.danger:hover {
-  background: #fef2f2;
+  background: var(--danger-bg);
 }
 .ctx-item.disabled {
-  color: #6b7280;
+  color: var(--muted);
   cursor: default;
 }
 .ctx-sep {
@@ -1034,12 +1131,18 @@ a {
 
 /* ---- Login ---- */
 .auth-wrap {
+  position: relative;
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 24px;
   background: var(--bg);
+}
+.auth-toggle {
+  position: absolute;
+  top: var(--space-4);
+  right: var(--space-4);
 }
 .auth-card {
   width: 100%;
@@ -1074,15 +1177,15 @@ a {
 }
 .auth-input {
   font: inherit;
-  color: #111827;
-  background: #fff;
+  color: var(--heading);
+  background: var(--surface);
   padding: 10px 12px;
   border: 1px solid var(--line-strong);
   border-radius: 8px;
   outline: none;
 }
 .auth-input::placeholder {
-  color: #6b7280;
+  color: var(--muted);
   opacity: 1;
 }
 .auth-input:focus {
@@ -1097,11 +1200,11 @@ a {
   border: none;
   border-radius: 8px;
   background: var(--accent);
-  color: #fff;
+  color: var(--accent-contrast);
   cursor: pointer;
 }
 .auth-btn:hover:not(:disabled) {
-  background: #1d4ed8;
+  background: var(--accent-hover);
 }
 .auth-btn:disabled {
   opacity: 0.6;
@@ -1110,18 +1213,18 @@ a {
 .auth-success {
   padding: 14px;
   border-radius: 8px;
-  background: #ecfdf5;
-  border: 1px solid #a7f3d0;
-  color: #065f46;
+  background: var(--success-bg);
+  border: 1px solid var(--success-border);
+  color: var(--success-text);
   font-size: 14px;
 }
 .auth-alert {
   margin-bottom: 16px;
   padding: 10px 12px;
   border-radius: 8px;
-  background: #fffbeb;
-  border: 1px solid #fde68a;
-  color: #92400e;
+  background: var(--warn-bg);
+  border: 1px solid var(--warn-border);
+  color: var(--warn-text);
   font-size: 13px;
 }
 .auth-error {
@@ -1136,63 +1239,105 @@ a {
 }
 
 /* ---- Account bar ---- */
+/* Top chrome: a light-on-light / dark-on-dark surface bar with a single hairline
+   underline (Vercel-style), not an inverted dark strip — so it reads correctly
+   in both themes. Neutral palette + blue accent only; no division colors here. */
 .acct-bar {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 20px;
-  background: #111827;
-  color: #e5e7eb;
-  font-size: 13px;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-6);
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  color: var(--muted);
+  font-size: var(--text-label);
 }
 .acct-brand {
   font-weight: 700;
-  letter-spacing: 0.01em;
+  letter-spacing: -0.01em;
+  color: var(--heading);
+  font-size: var(--text-card);
 }
 .acct-nav {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: var(--space-1);
+  margin-left: var(--space-3);
 }
 .acct-email {
-  color: #cbd5e1;
+  color: var(--muted);
   max-width: 40vw;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .acct-role {
-  font-size: 10px;
+  font-size: var(--text-caption);
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  background: #2563eb;
-  color: #fff;
-  border-radius: 999px;
-  padding: 1px 8px;
+  background: var(--accent-subtle);
+  color: var(--accent);
+  border-radius: var(--radius-pill);
+  padding: 2px 9px;
   font-weight: 700;
 }
 .acct-spacer {
   flex: 1 1 auto;
 }
 .acct-link {
-  color: #93c5fd;
-  font-weight: 600;
+  color: var(--muted);
+  font-weight: 500;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  transition: color 0.12s ease, background-color 0.12s ease;
 }
 .acct-link:hover {
-  text-decoration: underline;
+  color: var(--heading);
+  background: var(--surface-sunken);
+  text-decoration: none;
 }
 .acct-btn {
   font: inherit;
-  font-size: 12px;
+  font-size: var(--text-label);
+  font-weight: 500;
   background: transparent;
-  color: #e5e7eb;
-  border: 1px solid #374151;
-  border-radius: 6px;
-  padding: 4px 10px;
+  color: var(--muted);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  padding: var(--space-1) var(--space-3);
   cursor: pointer;
+  transition: color 0.12s ease, border-color 0.12s ease, background-color 0.12s ease;
 }
 .acct-btn:hover {
-  background: #1f2937;
+  color: var(--heading);
+  border-color: var(--muted);
+  background: var(--surface-sunken);
+}
+/* Icon-only theme toggle — a ghost square that matches the sign-out button's
+   weight without a text label. */
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: color 0.12s ease, border-color 0.12s ease, background-color 0.12s ease;
+}
+.theme-toggle:hover {
+  color: var(--heading);
+  border-color: var(--muted);
+  background: var(--surface-sunken);
+}
+.theme-ico {
+  width: 16px;
+  height: 16px;
+  display: block;
 }
 
 /* ---- Members screen ---- */
@@ -1229,8 +1374,8 @@ a {
 }
 .invite-input {
   font: inherit;
-  color: #111827;
-  background: #fff;
+  color: var(--heading);
+  background: var(--surface);
   flex: 1 1 auto;
   padding: 9px 12px;
   border: 1px solid var(--line-strong);
@@ -1238,7 +1383,7 @@ a {
   outline: none;
 }
 .invite-input::placeholder {
-  color: #6b7280;
+  color: var(--muted);
   opacity: 1;
 }
 .invite-input:focus {
@@ -1252,11 +1397,11 @@ a {
   border: none;
   border-radius: 8px;
   background: var(--accent);
-  color: #fff;
+  color: var(--accent-contrast);
   cursor: pointer;
 }
 .invite-btn:hover:not(:disabled) {
-  background: #1d4ed8;
+  background: var(--accent-hover);
 }
 .invite-btn:disabled {
   opacity: 0.6;
@@ -1264,7 +1409,7 @@ a {
 }
 .invite-ok {
   margin-top: 8px;
-  color: #065f46;
+  color: var(--success-text);
   font-size: 13px;
 }
 .invite-err {
@@ -1304,20 +1449,20 @@ a {
   font-weight: 700;
 }
 .m-role-admin {
-  background: #ede9fe;
-  color: #5b21b6;
+  background: var(--accent-border);
+  color: var(--accent);
 }
 .m-role-member {
-  background: #f3f4f6;
-  color: #374151;
+  background: var(--surface-sunken);
+  color: var(--text);
 }
 .m-status-active {
-  background: #ecfdf5;
-  color: #065f46;
+  background: var(--success-bg);
+  color: var(--success-text);
 }
 .m-status-invited {
-  background: #fffbeb;
-  color: #92400e;
+  background: var(--warn-bg);
+  color: var(--warn-text);
 }
 .m-empty {
   color: var(--muted);
@@ -1342,22 +1487,22 @@ a {
   padding: 4px 10px;
   border-radius: 6px;
   cursor: pointer;
-  background: #fff;
+  background: var(--surface);
   border: 1px solid var(--line-strong);
   color: var(--ink);
 }
 .m-rolebtn.promote {
-  color: #5b21b6;
-  border-color: #ddd6fe;
+  color: var(--accent);
+  border-color: var(--accent-border);
 }
 .m-rolebtn.promote:hover {
-  background: #f5f3ff;
+  background: var(--accent-subtle);
 }
 .m-rolebtn.demote {
-  color: #374151;
+  color: var(--text);
 }
 .m-rolebtn.demote:hover:not(:disabled) {
-  background: #f3f4f6;
+  background: var(--surface-sunken);
 }
 .m-rolebtn:disabled {
   opacity: 0.45;
@@ -1367,17 +1512,17 @@ a {
   margin-bottom: 14px;
   padding: 10px 12px;
   border-radius: 8px;
-  background: #ecfdf5;
-  border: 1px solid #a7f3d0;
-  color: #065f46;
+  background: var(--success-bg);
+  border: 1px solid var(--success-border);
+  color: var(--success-text);
   font-size: 13px;
 }
 .members-err {
   margin-bottom: 14px;
   padding: 10px 12px;
   border-radius: 8px;
-  background: #fef2f2;
-  border: 1px solid #fecaca;
+  background: var(--danger-bg);
+  border: 1px solid var(--danger-border);
   color: var(--danger);
   font-size: 13px;
 }
@@ -1413,8 +1558,8 @@ a {
 
   /* --- exec summary (no connector tree on phone) --- */
   .mb-exec {
-    background: #111827;
-    color: #e5e7eb;
+    background: var(--heading);
+    color: var(--border);
     border-radius: 10px;
     padding: 10px 12px;
     margin-bottom: 12px;
@@ -1490,7 +1635,7 @@ a {
     display: flex;
     flex-direction: column;
     gap: 12px;
-    background: #f7f8fa;
+    background: var(--surface-sunken);
     border-top: 1px solid var(--line);
   }
   .mb-reports {
@@ -1502,8 +1647,8 @@ a {
   }
   .mb-vfp {
     font-size: 13px;
-    color: #374151;
-    background: #fff;
+    color: var(--text);
+    background: var(--surface);
     border: 1px solid var(--line);
     border-radius: 8px;
     padding: 8px 10px;
@@ -1520,13 +1665,13 @@ a {
   .mb-dept {
     border: 1px solid var(--line);
     border-radius: 8px;
-    background: #fff;
+    background: var(--surface);
     overflow: hidden;
   }
   .mb-dept-head {
     padding: 8px 10px;
     border-bottom: 1px solid var(--line);
-    background: #f9fafb;
+    background: var(--surface-sunken);
   }
   .mb-dept-num {
     font-size: 9.5px;
@@ -1595,7 +1740,8 @@ a {
   .acct-nav {
     flex: 1 1 100%;
     flex-wrap: wrap;
-    gap: 8px 14px;
+    gap: 4px 8px;
+    margin-left: 0;
   }
   .acct-spacer {
     display: none;
@@ -1661,7 +1807,7 @@ a {
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.03em;
-  color: #2563eb;
+  color: var(--accent);
 }
 
 /* ---- shared page shell ---- */
@@ -1698,17 +1844,17 @@ a {
   margin-bottom: 14px;
   padding: 10px 12px;
   border-radius: 8px;
-  background: #ecfdf5;
-  border: 1px solid #a7f3d0;
-  color: #065f46;
+  background: var(--success-bg);
+  border: 1px solid var(--success-border);
+  color: var(--success-text);
   font-size: 13px;
 }
 .stx-err {
   margin-bottom: 14px;
   padding: 10px 12px;
   border-radius: 8px;
-  background: #fef2f2;
-  border: 1px solid #fecaca;
+  background: var(--danger-bg);
+  border: 1px solid var(--danger-border);
   color: var(--danger);
   font-size: 13px;
 }
@@ -1736,8 +1882,8 @@ a {
 .stx-select,
 .stx-input {
   font: inherit;
-  color: #111827;
-  background: #fff;
+  color: var(--heading);
+  background: var(--surface);
   width: 100%;
   padding: 10px 12px;
   border: 1px solid var(--line-strong);
@@ -1745,7 +1891,7 @@ a {
   outline: none;
 }
 .stx-input::placeholder {
-  color: #6b7280;
+  color: var(--muted);
   opacity: 1;
 }
 .stx-select:focus,
@@ -1762,13 +1908,13 @@ a {
   border: none;
   border-radius: 8px;
   background: var(--accent);
-  color: #fff;
+  color: var(--accent-contrast);
   cursor: pointer;
   align-self: flex-start;
 }
 .stx-btn:hover,
 .rpt-btn:hover {
-  background: #1d4ed8;
+  background: var(--accent-hover);
 }
 .stx-subhead {
   font-size: 15px;
@@ -1806,9 +1952,9 @@ a {
 .stx-chip {
   font-size: 12.5px;
   font-weight: 600;
-  color: #1e3a8a;
-  background: #eff4ff;
-  border: 1px solid #c7d7fb;
+  color: var(--accent);
+  background: var(--accent-subtle);
+  border: 1px solid var(--accent-border);
   border-radius: 999px;
   padding: 2px 10px;
 }
@@ -1834,7 +1980,7 @@ a {
   white-space: nowrap;
 }
 .rpt-weekbtn:hover {
-  background: #eff4ff;
+  background: var(--accent-subtle);
 }
 .rpt-weeklabel {
   font-size: 13.5px;
@@ -1863,8 +2009,8 @@ a {
 }
 .rpt-input {
   font: inherit;
-  color: #111827;
-  background: #fff;
+  color: var(--heading);
+  background: var(--surface);
   padding: 10px 12px;
   border: 1px solid var(--line-strong);
   border-radius: 8px;
@@ -1872,7 +2018,7 @@ a {
   max-width: 220px;
 }
 .rpt-input::placeholder {
-  color: #6b7280;
+  color: var(--muted);
   opacity: 1;
 }
 .rpt-input:focus {
@@ -2027,7 +2173,7 @@ a {
 /* Division head: a light strip directly under the colored division header. */
 .ob-headbox.division {
   padding: 7px 10px;
-  background: #eef1f5;
+  background: var(--surface-sunken);
   border-bottom: 1px solid var(--line);
 }
 /* Department head: nested inside the department box, under its name. */
@@ -2049,7 +2195,7 @@ a {
   align-items: center;
   gap: 5px;
   font-weight: 700;
-  color: #111827;
+  color: var(--heading);
 }
 .ob-headbox.division .ob-headbox-title {
   font-size: 12.5px;
@@ -2063,7 +2209,7 @@ a {
 }
 .ob-headbox-holder {
   font-size: 12px;
-  color: #374151;
+  color: var(--text);
 }
 .ob-headbox.department .ob-headbox-holder {
   font-size: 11.5px;
@@ -2075,7 +2221,7 @@ a {
   margin: 0 -2px;
 }
 .ob-headbox-holder-val:hover {
-  background: #e5e9f0;
+  background: var(--surface-sunken);
 }
 
 /* Mobile: division head (Secretary) line inside the drawer */
@@ -2084,7 +2230,7 @@ a {
     display: flex;
     flex-direction: column;
     gap: 1px;
-    background: #fff;
+    background: var(--surface);
     border: 1px solid var(--line);
     border-radius: 8px;
     padding: 8px 10px;
@@ -2166,8 +2312,8 @@ a {
   margin-bottom: 14px;
   padding: 10px 12px;
   border-radius: 8px;
-  background: #fef2f2;
-  border: 1px solid #fecaca;
+  background: var(--danger-bg);
+  border: 1px solid var(--danger-border);
   color: var(--danger);
   font-size: 13px;
 }
@@ -2196,7 +2342,7 @@ a {
   letter-spacing: 0.04em;
   color: var(--muted);
   padding: 10px 14px;
-  background: #fafafa;
+  background: var(--surface-sunken);
   border-bottom: 1px solid var(--line);
   white-space: nowrap;
 }
@@ -2233,7 +2379,7 @@ a {
   display: inline-block;
   padding: 1px 6px;
   border-radius: 5px;
-  background: #f3f4f6;
+  background: var(--surface-sunken);
   border: 1px solid var(--line-strong);
   color: var(--muted);
   font-size: 11px;
@@ -2246,8 +2392,8 @@ a {
 
 .sh-input {
   font: inherit;
-  color: #111827;
-  background: #fff;
+  color: var(--heading);
+  background: var(--surface);
   width: 100%;
   max-width: 140px;
   padding: 5px 8px;
@@ -2260,8 +2406,8 @@ a {
 }
 .sh-textarea {
   font: inherit;
-  color: #111827;
-  background: #fff;
+  color: var(--heading);
+  background: var(--surface);
   width: 100%;
   padding: 8px 10px;
   border: 1px solid var(--line-strong);
@@ -2391,16 +2537,16 @@ a {
   border: none;
   border-radius: 8px;
   background: var(--accent);
-  color: #fff;
+  color: var(--accent-contrast);
   font: inherit;
   font-weight: 600;
   cursor: pointer;
 }
 .sh-btn:hover {
-  background: #1d4ed8;
+  background: var(--accent-hover);
 }
 .sh-btn:disabled {
-  background: #93b4f5;
+  background: var(--accent-border);
   cursor: default;
 }
 
@@ -2570,11 +2716,11 @@ a {
 }
 .gr-scale:hover {
   color: var(--ink);
-  background: #f9fafb;
+  background: var(--surface-sunken);
 }
 .gr-scale-on,
 .gr-scale-on:hover {
-  color: #fff;
+  color: var(--accent-contrast);
   background: var(--accent);
 }
 .gr-rollup {
@@ -2587,8 +2733,8 @@ a {
 .gr-select {
   font: inherit;
   font-size: 12.5px;
-  color: #111827;
-  background: #fff;
+  color: var(--heading);
+  background: var(--surface);
   padding: 5px 8px;
   border: 1px solid var(--line-strong);
   border-radius: 7px;
@@ -2651,8 +2797,8 @@ a {
   max-width: 230px;
   padding: 7px 9px;
   border-radius: 8px;
-  background: #111827;
-  color: #f9fafb;
+  background: var(--heading);
+  color: var(--surface-sunken);
   font-size: 12px;
   line-height: 1.35;
   pointer-events: none;
@@ -2667,7 +2813,7 @@ a {
   font-weight: 700;
 }
 .gr-tip-head {
-  color: #d1d5db;
+  color: var(--border-strong);
   font-size: 11.5px;
 }
 .gr-tip-body {
@@ -2951,7 +3097,7 @@ a {
   border-color: var(--accent);
 }
 .cm-chip-on {
-  color: #fff;
+  color: var(--accent-contrast);
   background: var(--accent);
   border-color: var(--accent);
 }
@@ -2970,7 +3116,7 @@ a {
 }
 .cm-chip-on .cm-chipcount {
   background: rgba(255, 255, 255, 0.22);
-  color: #fff;
+  color: var(--accent-contrast);
 }
 
 /* a group section */
@@ -3101,13 +3247,13 @@ a {
 }
 .rpt-locked {
   color: var(--ink);
-  background: #fff8e6;
-  border: 1px solid #e6c65c;
+  background: var(--warn-bg);
+  border: 1px solid var(--warn-border);
 }
 .rpt-err {
-  color: #7f1d1d;
-  background: #fef2f2;
-  border: 1px solid #fca5a5;
+  color: var(--danger-text);
+  background: var(--danger-bg);
+  border: 1px solid var(--danger-border);
 }
 .sh-locknote {
   margin: 10px 0 6px;
@@ -3130,7 +3276,7 @@ a {
 /* An admin editing a closed week is doing something different from a normal
    correction, so it does not look like one. */
 .sh-override {
-  color: #92400e;
+  color: var(--warn-text);
   font-weight: 700;
 }
 .sh-override::before {
@@ -3180,14 +3326,14 @@ a {
   border-radius: 999px;
 }
 .col-lockchip {
-  color: #92400e;
-  background: #fff8e6;
-  border: 1px solid #e6c65c;
+  color: var(--warn-text);
+  background: var(--warn-bg);
+  border: 1px solid var(--warn-border);
 }
 .col-openchip {
-  color: #14532d;
-  background: #ecfdf5;
-  border: 1px solid #6ee7b7;
+  color: var(--success-text);
+  background: var(--success-bg);
+  border: 1px solid var(--success-border);
 }
 
 /* summary: the missing count is the headline number */
@@ -3210,7 +3356,7 @@ a {
 .col-statnum {
   font-size: 26px;
   font-weight: 700;
-  color: #b91c1c;
+  color: var(--danger);
   font-variant-numeric: tabular-nums;
 }
 .col-stat-quiet .col-statnum {
@@ -3231,7 +3377,7 @@ a {
 }
 .col-barfill {
   height: 100%;
-  background: #059669;
+  background: var(--success);
   border-radius: 999px;
 }
 .col-pct {
@@ -3297,10 +3443,10 @@ a {
   border-radius: 50%;
 }
 .col-dot-missing {
-  background: #b91c1c;
+  background: var(--danger);
 }
 .col-dot-ok {
-  background: #059669;
+  background: var(--success);
 }
 .col-name {
   font-weight: 600;
@@ -3325,11 +3471,11 @@ a {
 .col-alldone {
   margin: 0;
   padding: 12px 14px;
-  background: #ecfdf5;
-  border: 1px solid #6ee7b7;
+  background: var(--success-bg);
+  border: 1px solid var(--success-border);
   border-radius: 10px;
   font-size: 13.5px;
-  color: #14532d;
+  color: var(--success-text);
 }
 .col-none {
   margin: 0;
@@ -3385,7 +3531,7 @@ a {
   border-color: var(--accent);
 }
 .col-btn-primary {
-  color: #fff;
+  color: var(--accent-contrast);
   background: var(--accent);
   border-color: var(--accent);
 }
@@ -3397,9 +3543,9 @@ a {
   margin-top: 10px;
   padding: 9px 12px;
   font-size: 13px;
-  color: #7f1d1d;
-  background: #fef2f2;
-  border: 1px solid #fca5a5;
+  color: var(--danger-text);
+  background: var(--danger-bg);
+  border: 1px solid var(--danger-border);
   border-radius: 8px;
 }
 .col-preview-label {
@@ -3594,14 +3740,14 @@ a {
   border: 1px solid var(--line-strong);
 }
 .jr-warn {
-  color: #92400e;
-  background: #fff8e6;
-  border: 1px solid #e6c65c;
+  color: var(--warn-text);
+  background: var(--warn-bg);
+  border: 1px solid var(--warn-border);
 }
 .jr-count {
-  color: #14532d;
-  background: #ecfdf5;
-  border: 1px solid #6ee7b7;
+  color: var(--success-text);
+  background: var(--success-bg);
+  border: 1px solid var(--success-border);
 }
 .jr-count-none {
   color: var(--muted);
@@ -3776,7 +3922,7 @@ a {
   font: inherit;
   font-size: 13px;
   font-weight: 600;
-  color: #fff;
+  color: var(--accent-contrast);
   background: var(--accent);
   border: 1px solid var(--accent);
   border-radius: 8px;
@@ -3788,15 +3934,15 @@ a {
 }
 .adj-needsnote {
   font-size: 12px;
-  color: #92400e;
+  color: var(--warn-text);
 }
 .adj-err {
   margin-bottom: 10px;
   padding: 8px 11px;
   font-size: 12.5px;
-  color: #7f1d1d;
-  background: #fef2f2;
-  border: 1px solid #fca5a5;
+  color: var(--danger-text);
+  background: var(--danger-bg);
+  border: 1px solid var(--danger-border);
   border-radius: 8px;
 }
 .adj-locked {
@@ -3877,7 +4023,7 @@ a {
   border-color: var(--accent);
 }
 .cc-tab-on {
-  color: #fff;
+  color: var(--accent-contrast);
   background: var(--accent);
   border-color: var(--accent);
 }
@@ -3964,7 +4110,7 @@ a {
   font: inherit;
   font-size: 12.5px;
   font-weight: 600;
-  color: #fff;
+  color: var(--accent-contrast);
   background: var(--accent);
   border: 1px solid var(--accent);
   border-radius: 8px;
@@ -3987,9 +4133,9 @@ a {
   margin-bottom: 9px;
   padding: 7px 10px;
   font-size: 12px;
-  color: #7f1d1d;
-  background: #fef2f2;
-  border: 1px solid #fca5a5;
+  color: var(--danger-text);
+  background: var(--danger-bg);
+  border: 1px solid var(--danger-border);
   border-radius: 8px;
 }
 .cc-locked {
@@ -4115,14 +4261,14 @@ a {
   font-size: 13px;
   border: 1px solid var(--line-strong);
   border-radius: 8px;
-  background: #fff;
+  background: var(--surface);
 }
 .wc-btn {
   padding: 8px 15px;
   font: inherit;
   font-size: 13px;
   font-weight: 600;
-  color: #fff;
+  color: var(--accent-contrast);
   background: var(--accent);
   border: 1px solid var(--accent);
   border-radius: 8px;
@@ -4136,7 +4282,7 @@ a {
 .wc-err {
   margin-top: 8px;
   font-size: 12.5px;
-  color: #7f1d1d;
+  color: var(--danger-text);
 }
 .wc-note {
   margin: 8px 0 0;
@@ -4202,14 +4348,14 @@ a {
   font-size: 13px;
   border: 1px solid var(--line-strong);
   border-radius: 8px;
-  background: #fff;
+  background: var(--surface);
 }
 .wf-apply {
   padding: 7px 14px;
   font: inherit;
   font-size: 13px;
   font-weight: 600;
-  color: #fff;
+  color: var(--accent-contrast);
   background: var(--accent);
   border: 1px solid var(--accent);
   border-radius: 8px;
@@ -4282,9 +4428,9 @@ a {
 .win-unattr {
   padding: 1px 8px;
   font-weight: 700;
-  color: #92400e;
-  background: #fff8e6;
-  border: 1px solid #e6c65c;
+  color: var(--warn-text);
+  background: var(--warn-bg);
+  border: 1px solid var(--warn-border);
   border-radius: 999px;
 }
 .win-area {
@@ -4306,7 +4452,7 @@ a {
   cursor: pointer;
 }
 .win-del:hover {
-  color: #b91c1c;
+  color: var(--danger);
   border-color: var(--line-strong);
 }
 
@@ -4539,7 +4685,7 @@ a {
   font: inherit;
   font-size: 13px;
   font-weight: 600;
-  color: #fff;
+  color: var(--accent-contrast);
   background: var(--accent);
   border: 1px solid var(--accent);
   border-radius: 8px;
@@ -4562,9 +4708,9 @@ a {
   margin-top: 9px;
   padding: 8px 11px;
   font-size: 12.5px;
-  color: #7f1d1d;
-  background: #fef2f2;
-  border: 1px solid #fca5a5;
+  color: var(--danger-text);
+  background: var(--danger-bg);
+  border: 1px solid var(--danger-border);
   border-radius: 8px;
 }
 .mn-body {
@@ -4621,9 +4767,9 @@ a {
 .ml-has {
   padding: 1px 9px;
   font-weight: 700;
-  color: #14532d;
-  background: #ecfdf5;
-  border: 1px solid #6ee7b7;
+  color: var(--success-text);
+  background: var(--success-bg);
+  border: 1px solid var(--success-border);
   border-radius: 999px;
 }
 .ml-no {
@@ -4662,7 +4808,7 @@ a {
   color: var(--ink);
 }
 .wvs-on {
-  color: #fff;
+  color: var(--accent-contrast);
   background: var(--accent);
 }
 
@@ -4684,7 +4830,7 @@ a {
   padding: 9px 16px;
   font-size: 13.5px;
   font-weight: 600;
-  color: #fff;
+  color: var(--accent-contrast);
   background: var(--accent);
   border: 1px solid var(--accent);
   border-radius: 999px;

@@ -68,6 +68,28 @@ Set the same env vars in the Vercel project settings, then deploy. Keep
 `SUPABASE_SERVICE_ROLE_KEY` unexposed (no `NEXT_PUBLIC_` prefix). Production has
 `DB_SCHEMA=public` — never set it to `dev` there.
 
+## Design system
+
+Tokens and primitives are defined **once** in the DESIGN TOKENS block at the top
+of `app/globals.css` and documented in **[DESIGN.md](DESIGN.md)**. Every screen
+composes from them, so future slices inherit the polish automatically.
+
+The essentials:
+
+- **Chrome vs. content color.** App chrome is a calm neutral palette + **one**
+  desaturated blue accent (`--accent`). The org board's seven division flash
+  colors are **content** (from `divisions.color`, applied only to board cards) —
+  they never touch nav, buttons, tabs, or surfaces.
+- **Light + dark, both first-class.** Colors are semantic tokens with a
+  `:root[data-theme='dark']` override. Theme is set pre-paint by an inline
+  no-flash script in `app/layout.tsx`, defaults to the OS, and the user's choice
+  persists to `localStorage` (toggle in the account bar / login).
+- **Scales.** 4-based spacing (`--space-*`), an Inter type scale (`--text-*`),
+  one card radius (`--radius`), and a small subtle shadow set. Separate with
+  spacing first, hairline border next, shadow only for floating elements.
+- **Rule of thumb:** in a component, reach for a token — never a raw hex. If none
+  fits, add a *semantic* token with both light and dark values.
+
 ## Screens
 
 - `/board` — the 7 divisions as clickable cards (name + VFP, in division color).

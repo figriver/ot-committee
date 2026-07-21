@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 /**
  * Slim top nav shown above every signed-in page.
@@ -49,6 +50,7 @@ export function AccountBar({
           admin
         </span>
       )}
+      <ThemeToggle />
       <form action="/auth/signout" method="post">
         <button type="submit" className="acct-btn">
           Sign out

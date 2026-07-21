@@ -51,11 +51,15 @@ type Props = {
   showControls?: boolean;
 };
 
-const RISING = '#111827'; // near-black ink
-const FALLING = '#b91c1c'; // --danger
-const NOTE = '#b91c1c';
-const GRID = '#e5e7eb';
-const AXIS_TEXT = '#6b7280';
+// Theme-aware via CSS vars: --graph-rising flips to near-white in dark mode so
+// the up/level line stays visible on a dark plot; the rest track their neutral
+// and danger tokens. SVG stroke/fill accept var() references directly.
+const RISING = 'var(--graph-rising)'; // near-black ink (near-white in dark)
+const FALLING = 'var(--graph-falling)'; // --danger
+const NOTE = 'var(--graph-falling)';
+const GRID = 'var(--graph-grid)';
+const AXIS_TEXT = 'var(--graph-axis)';
+const DOT_RING = 'var(--graph-dotring)'; // surface-colored ring around dots
 
 const PAD = { top: 18, right: 18, bottom: 30, left: 46 };
 const H = 250;
@@ -368,7 +372,7 @@ export function StatGraph({
                       cy={yOf(p.value)}
                       r={hover?.kind === 'point' && hover.i === i ? 5 : 3.5}
                       fill={RISING}
-                      stroke="#fff"
+                      stroke={DOT_RING}
                       strokeWidth={2}
                     />
                   ),

@@ -1,4 +1,5 @@
 import { LoginForm } from './login-form';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,6 +18,9 @@ export default async function LoginPage({
 
   return (
     <div className="auth-wrap">
+      <div className="auth-toggle">
+        <ThemeToggle />
+      </div>
       <LoginForm notice={notice} />
     </div>
   );
