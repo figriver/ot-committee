@@ -7,6 +7,9 @@ import { getLockConfig, isLockedAt, describeLock } from '@/lib/lock';
 import { AccountBar } from '@/components/account-bar';
 import { submitReport } from './actions';
 import { AdjustableEntryCard } from '@/components/adjustable-entry';
+import { WinComposer } from '@/components/win-composer';
+import { getPostsForPicker } from '@/lib/stats';
+import { listWins } from '@/lib/wins';
 import { StatsSubNav } from '@/components/stats-subnav';
 
 export const dynamic = 'force-dynamic';
@@ -38,6 +41,17 @@ export default async function ReportPage({
 
   const lockCfg = await getLockConfig();
   const locked = isLockedAt(weekEnding, lockCfg);
+
+  // Wins-this-week entry (root surface). Area options + the member's own recent
+  // wins for a little in-context list.
+  const [winPicker, recentMine] = await Promise.all([
+    getPostsForPicker(),
+    listWins(member.id, { memberId: member.id }),
+  ]);
+  const winAreas = winPicker.map((p) => ({ id: p.id, label: p.label }));
+  const winDefaultArea = view.heldPosts[0]?.postId ?? '';
+  const winToday = new Date().toISOString().slice(0, 10);
+  const recentMineTop = recentMine.slice(0, 3);
 
   const qs = (extra: Record<string, string | undefined>) => {
     const q = new URLSearchParams();
@@ -220,6 +234,36 @@ export default async function ReportPage({
                 />
               ))}
             </div>
+          </section>
+        )}
+
+        {/* Wins this week — the member's narrative production, same rhythm as
+            stats. Root only (it is per-member, not per drilled post). */}
+        {atRoot && (
+          <section className="wins-add wins-add-enter">
+            <h3 className="wins-addh">
+              Wins this week
+              <span className="wins-addhint">free text, tagged to an area — add as many as you like</span>
+            </h3>
+            <WinComposer
+              mode="member"
+              areaOptions={winAreas}
+              defaultAreaId={winDefaultArea}
+              today={winToday}
+            />
+            {recentMineTop.length > 0 && (
+              <ul className="wins-recentmine">
+                {recentMineTop.map((w) => (
+                  <li key={w.id}>
+                    <span className="wins-recentbody">{w.body}</span>
+                    <span className="wins-recentmeta">{w.divisionLabel}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <Link href="/wins" className="wins-seeall">
+              See all wins →
+            </Link>
           </section>
         )}
 

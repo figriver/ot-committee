@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { requireMember } from '@/lib/auth';
 import { getMyDashboard } from '@/lib/dashboard';
+import { recentWins } from '@/lib/wins';
 import { asScale, SCALES, type Scale } from '@/lib/series';
 import { formatDate } from '@/lib/week';
 import { AccountBar } from '@/components/account-bar';
@@ -32,6 +33,7 @@ export default async function DashboardPage({
   const scale = asScale(sp.scale);
 
   const { cards, postCount, statCount, coveredCount } = await getMyDashboard(member, scale);
+  const recent = await recentWins(member.id, 6);
 
   // Group by the branch each stat reaches this member through — the same
   // branches the report view drills into, so the two read the same way.
@@ -64,6 +66,29 @@ export default async function DashboardPage({
             Enter a report →
           </Link>
         </div>
+
+        {/* login feed — recent committee wins so members stay abreast */}
+        {recent.length > 0 && (
+          <section className="db-feed">
+            <div className="db-feedhead">
+              <h2>Recent wins</h2>
+              <Link href="/wins" className="db-feedlink">
+                All wins →
+              </Link>
+            </div>
+            <ul className="db-feedlist">
+              {recent.map((w) => (
+                <li key={w.id} className="db-feeditem">
+                  <span className="db-feedbody">{w.body}</span>
+                  <span className="db-feedmeta">
+                    {w.isUnattributed ? 'unattributed' : w.memberName}
+                    {w.areaPostId ? ` · ${w.divisionLabel}` : ''}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
 
         <div className="db-scales" role="group" aria-label="Time scale">
           {SCALES.map((s: Scale) => (

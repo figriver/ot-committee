@@ -31,6 +31,9 @@ export function AccountBar({
         <Link href="/dashboard" className="acct-link">
           Stats
         </Link>
+        <Link href="/wins" className="acct-link">
+          Wins
+        </Link>
         {isAdmin && (
           <Link href="/settings" className="acct-link">
             Settings
