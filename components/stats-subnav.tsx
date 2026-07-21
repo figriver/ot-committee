@@ -7,18 +7,19 @@ import Link from 'next/link';
 // `active` is the current surface so the right tab is highlighted without any
 // client JS (each page passes its own).
 
-export type StatsTab = 'my' | 'enter' | 'committee';
+export type StatsTab = 'my' | 'enter' | 'committee' | 'bulk';
 
-const TABS: { key: StatsTab; label: string; href: string; hint: string }[] = [
+const TABS: { key: StatsTab; label: string; href: string; hint: string; adminOnly?: boolean }[] = [
   { key: 'my', label: 'My Stats', href: '/dashboard', hint: 'Your graphs' },
   { key: 'enter', label: 'Enter', href: '/stats', hint: 'Weekly report' },
   { key: 'committee', label: 'Committee', href: '/committee', hint: 'Everyone, grouped' },
+  { key: 'bulk', label: 'Bulk entry', href: '/stats/bulk', hint: 'Admin grid', adminOnly: true },
 ];
 
-export function StatsSubNav({ active }: { active: StatsTab }) {
+export function StatsSubNav({ active, isAdmin = false }: { active: StatsTab; isAdmin?: boolean }) {
   return (
     <nav className="subnav" aria-label="Stats sections">
-      {TABS.map((t) => (
+      {TABS.filter((t) => !t.adminOnly || isAdmin).map((t) => (
         <Link
           key={t.key}
           href={t.href}

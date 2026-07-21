@@ -47,7 +47,7 @@ export default async function DashboardPage({
   return (
     <>
       <AccountBar email={member.email} isAdmin={member.role === 'admin'} />
-      <StatsSubNav active="my" />
+      <StatsSubNav active="my" isAdmin={member.role === 'admin'} />
       <div className="db-wrap">
         <div className="db-head">
           <div>

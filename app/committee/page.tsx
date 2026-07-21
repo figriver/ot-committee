@@ -80,7 +80,7 @@ export default async function CommitteePage({
   return (
     <>
       <AccountBar email={member.email} isAdmin={member.role === 'admin'} />
-      <StatsSubNav active="committee" />
+      <StatsSubNav active="committee" isAdmin={member.role === 'admin'} />
       <div className="cm-wrap">
         <div className="cm-head">
           <div>

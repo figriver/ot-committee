@@ -66,7 +66,7 @@ export default async function ReportPage({
   return (
     <>
       <AccountBar email={member.email} isAdmin={member.role === 'admin'} />
-      <StatsSubNav active="enter" />
+      <StatsSubNav active="enter" isAdmin={member.role === 'admin'} />
       <div className="rpt-wrap">
         <div className="rpt-head">
           <h1>Stats</h1>
