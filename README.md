@@ -98,6 +98,31 @@ rather than extend `.gitignore` depending on CLI version). It excludes the impor
 carry members' names, emails and phone numbers, are parsed into the database
 once, and are never read at build or run time.
 
+### ⚠️ Done-checks run against `dev` only; production gets READ-ONLY verification
+
+**Mutating/destructive done-checks run against DEV ONLY. Production gets
+read-only verification. Never create, modify, or delete production rows to prove
+a feature works — and never modify a production account's role, even
+temporarily: a failure between demote and restore locks the operator out of their
+own admin with no one able to restore it.**
+
+This is the sharper edge of the `DB_SCHEMA` rule above. A done-check that walks a
+feature end-to-end — creating a record, moving it, flipping a role to prove the
+server refuses a non-admin, deleting it again — is exactly the kind of script
+that *looks* safe because it cleans up after itself. It is not safe against
+`public`:
+
+- Cleanup only runs if the script reaches the end. A timeout, a failed selector
+  or a thrown assertion leaves the intermediate state behind — and if that state
+  is a demoted admin, **there is no one left with the rights to undo it**.
+- Rows written to `public` are real committee records, not fixtures.
+- Someone may be using the app while the test runs.
+
+So: run the full mutating walk against `dev`, then verify the deployed site with
+**reads only** — HTTP status, rendered content, navigation, search results. If a
+behaviour genuinely cannot be observed without a write, that is a signal to
+reproduce it in `dev`, not a licence to write to `public`.
+
 ## Design system
 
 Tokens and primitives are defined **once** in the DESIGN TOKENS block at the top
