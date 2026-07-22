@@ -7,6 +7,8 @@ import { isWeekEnding } from '@/lib/week';
 import { assertWeekOpen } from '@/lib/lock';
 import { reportableStatIds } from '@/lib/reporting';
 import { loadAdjustable } from '@/lib/adjustable';
+import { detailKinds } from '@/lib/detail-lines';
+import { specFor, HOURS_KIND } from '@/lib/stat-details';
 
 /**
  * Save the current member's weekly report: their Hours (once) + a value for each
@@ -39,7 +41,9 @@ export async function submitReport(formData: FormData): Promise<void> {
   const now = new Date().toISOString();
 
   // --- Hours (universal, keyed to the member) ---
-  const hoursRaw = String(formData.get('hours') ?? '').trim();
+  // Hours with a detail spec are saved by their own card, together with the
+  // project rows — writing them here too would let a value land without detail.
+  const hoursRaw = specFor(HOURS_KIND) ? '' : String(formData.get('hours') ?? '').trim();
   if (hoursRaw !== '') {
     const hours = Number(hoursRaw);
     if (!Number.isNaN(hours)) {
@@ -70,6 +74,9 @@ export async function submitReport(formData: FormData): Promise<void> {
     // Adjustable stats are never written here — they use stat_adjustments, and a
     // value in stat_entries would be silently ignored by their read path.
     const adjustable = await loadAdjustable(submitted.map((s) => s.statId));
+    // Same reason as hours: a stat that owes a detail table is saved by
+    // saveEntryWithDetail, which refuses the value unless the rows are there.
+    const withDetail = await detailKinds(submitted.map((s) => s.statId));
 
     const { data: stats } = await supa
       .from('stats')
@@ -81,7 +88,13 @@ export async function submitReport(formData: FormData): Promise<void> {
     const postByStat = new Map((stats ?? []).map((s) => [s.id, s.post_id]));
 
     const rows = submitted
-      .filter((s) => reportable.has(s.statId) && postByStat.has(s.statId) && !adjustable.has(s.statId))
+      .filter(
+        (s) =>
+          reportable.has(s.statId) &&
+          postByStat.has(s.statId) &&
+          !adjustable.has(s.statId) &&
+          !withDetail.has(s.statId),
+      )
       .map((s) => ({
         stat_id: s.statId,
         member_id: member.id,

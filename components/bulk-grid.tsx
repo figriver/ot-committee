@@ -4,6 +4,9 @@ import { useState, useTransition } from 'react';
 import Link from 'next/link';
 import { saveBulkStat } from '@/app/stats/bulk/actions';
 import type { BulkRow } from '@/lib/bulk';
+import { loadDetailLines } from '@/app/stats/detail-actions';
+import { DetailEntryCard } from '@/components/detail-entry';
+import type { DetailLineInput } from '@/lib/stat-details';
 
 // Editable grid: rows = stats, columns = recent weeks. Plain stats have editable
 // cells; adjustable stats show their computed total read-only and link to their
@@ -39,6 +42,21 @@ export function BulkGrid({ rows, weeks }: { rows: BulkRow[]; weeks: WeekMeta[] }
   const [status, setStatus] = useState<Record<string, CellStatus>>({});
   const [errorMsg, setErrorMsg] = useState<Record<string, string>>({});
   const [, startTransition] = useTransition();
+  // A stat that owes the report a detail table cannot be entered as one number,
+  // so the grid opens the same card the weekly form uses, for one cell at a time.
+  const [detailCell, setDetailCell] = useState<
+    { row: BulkRow; week: string; label: string; lines: DetailLineInput[] } | null
+  >(null);
+  const [detailBusy, setDetailBusy] = useState(false);
+
+  const openDetail = (row: BulkRow, week: string, label: string) => {
+    setDetailBusy(true);
+    startTransition(async () => {
+      const r = await loadDetailLines(row.statId, week);
+      setDetailCell({ row, week, label, lines: r.ok ? r.value.lines : [] });
+      setDetailBusy(false);
+    });
+  };
 
   const setCell = (key: string, val: string) => setDraft((d) => ({ ...d, [key]: val }));
   const setStat = (key: string, s: CellStatus) => setStatus((m) => ({ ...m, [key]: s }));
@@ -98,6 +116,25 @@ export function BulkGrid({ rows, weeks }: { rows: BulkRow[]; weeks: WeekMeta[] }
                     </td>
                   );
                 }
+                if (r.detailKind) {
+                  const v = r.values[w.week];
+                  return (
+                    <td key={w.week} className="bulk-cell bulk-cell-detail">
+                      <button
+                        type="button"
+                        className="bulk-detailbtn"
+                        disabled={detailBusy}
+                        title="This stat needs its detail table — open it"
+                        onClick={() => openDetail(r, w.week, w.label)}
+                      >
+                        {v == null ? 'NR' : fmt(v)}
+                        <span className="bulk-detailmark" aria-hidden="true">
+                          ⋯
+                        </span>
+                      </button>
+                    </td>
+                  );
+                }
                 const st = status[key] ?? 'idle';
                 return (
                   <td key={w.week} className={`bulk-cell bulk-cell-${st}`}>
@@ -121,6 +158,30 @@ export function BulkGrid({ rows, weeks }: { rows: BulkRow[]; weeks: WeekMeta[] }
           ))}
         </tbody>
       </table>
+      {detailCell && (
+        <div className="bulk-detailpanel">
+          <div className="bulk-detailhead">
+            <span>
+              {detailCell.row.name} — week ending {detailCell.label}
+            </span>
+            <button type="button" className="bulk-detailclose" onClick={() => setDetailCell(null)}>
+              Close
+            </button>
+          </div>
+          <DetailEntryCard
+            key={`${detailCell.row.statId}|${detailCell.week}`}
+            subjectType="stat"
+            statId={detailCell.row.statId}
+            statName={detailCell.row.name}
+            detailKind={detailCell.row.detailKind!}
+            weekEnding={detailCell.week}
+            initialValue={fmt(detailCell.row.values[detailCell.week])}
+            initialLines={detailCell.lines}
+            mode="correction"
+          />
+        </div>
+      )}
+
       <p className="bulk-adjnote">
         <span className="bulk-adjkey" aria-hidden="true" /> Adjustable stats show their computed
         total and are edited on their{' '}

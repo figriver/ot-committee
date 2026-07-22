@@ -2,6 +2,7 @@ import 'server-only';
 import { getServiceClient } from '@/lib/supabase/server';
 import { getStatsWithContext } from '@/lib/stats';
 import { loadAdjustable, getAdjustableWeekly, type BaseKind } from '@/lib/adjustable';
+import { detailKinds } from '@/lib/detail-lines';
 
 // Data layer for the admin BULK STATS GRID (rows = stats, columns = recent
 // weeks). It only READS here; every write goes back through correctValue (plain
@@ -19,6 +20,8 @@ export type BulkRow = {
   context: string; // board label: "Div 1 · Dept — Post"
   isAdjustable: boolean;
   baseKind: BaseKind | null;
+  /** Set when this stat owes the report a detail table (0022). */
+  detailKind: string | null;
   // week-ending → value. null = NR (not reported). For adjustable stats this is
   // the computed base+manual total and the cell is read-only (edited on its card).
   values: Record<string, number | null>;
@@ -34,6 +37,7 @@ export async function getBulkGrid(weeks: string[]): Promise<BulkRow[]> {
   const hi = sorted[sorted.length - 1];
 
   const adjustable = await loadAdjustable(ids);
+  const kinds = await detailKinds(ids);
   const supa = getServiceClient();
 
   // Plain-stat values across the window; collapse to the most-recent row per
@@ -69,6 +73,7 @@ export async function getBulkGrid(weeks: string[]): Promise<BulkRow[]> {
       name: s.name,
       context: s.postLabel,
       isAdjustable: Boolean(adj),
+      detailKind: kinds.get(s.id) ?? null,
       baseKind: adj?.baseKind ?? null,
       values,
     });

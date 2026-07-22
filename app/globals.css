@@ -7501,3 +7501,286 @@ a {
 .win-err {
   margin: 6px 0 0;
 }
+
+/* ==========================================================================
+   Stat detail lines (0022) — the who/what/where the upline report wants behind
+   a number. Entry card on the weekly report; compact list under the value in
+   history. Imported weeks have no detail and render nothing at all.
+   ========================================================================== */
+.de-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+  gap: 12px;
+}
+.de-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  padding: 14px 16px 16px;
+}
+.de-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+.de-name {
+  font-size: var(--text-card);
+  font-weight: 700;
+  color: var(--heading);
+}
+.de-req {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-subtle);
+}
+.de-hint {
+  margin: 4px 0 10px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+.de-valuefield {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+.de-vlabel {
+  font-size: var(--text-label);
+  font-weight: 600;
+  color: var(--muted);
+}
+.de-value {
+  width: 110px;
+  padding: 7px 10px;
+  font: inherit;
+  font-size: 14px;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+}
+.de-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+}
+.de-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+.de-rownum {
+  flex: none;
+  width: 18px;
+  padding-bottom: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-subtle);
+}
+.de-field {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.de-flabel {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.de-star {
+  color: var(--danger);
+}
+.de-input {
+  width: 100%;
+  padding: 7px 9px;
+  font: inherit;
+  font-size: 13px;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+}
+.de-input:focus,
+.de-value:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+  border-color: var(--accent);
+}
+.de-drop {
+  flex: none;
+  width: 26px;
+  height: 30px;
+  font: inherit;
+  font-size: 12px;
+  color: var(--muted);
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+.de-drop:hover {
+  color: var(--danger-text);
+  border-color: var(--danger-border);
+}
+.de-add {
+  margin-top: 10px;
+  padding: 6px 11px;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--accent);
+  background: var(--surface);
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+.de-add:hover {
+  border-color: var(--accent);
+  border-style: solid;
+}
+.de-countnote {
+  margin: 10px 0 0;
+  font-size: 11.5px;
+  color: var(--text-subtle);
+}
+.de-err {
+  margin-top: 10px;
+  padding: 8px 11px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--danger-text);
+  background: var(--danger-bg);
+  border: 1px solid var(--danger-border);
+  border-radius: var(--radius-sm);
+}
+.de-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+}
+.de-save {
+  padding: 8px 15px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent-contrast);
+  background: var(--accent);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+.de-save:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+.de-save:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.de-ok {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--success-text);
+}
+
+/* ---- detail under a history value ---- */
+.sh-detail {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.sh-detailline {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--muted);
+}
+.sh-detailtext {
+  flex: 1;
+  min-width: 0;
+}
+.sh-detailwho {
+  flex: none;
+  color: var(--text-subtle);
+}
+
+@media (max-width: 639px) {
+  .de-grid {
+    grid-template-columns: 1fr;
+  }
+  .de-row {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .de-field {
+    flex: 1 1 45%;
+  }
+}
+
+/* Bulk grid: a stat that owes a detail table can't be a bare number, so its
+   cell opens the same card the weekly report uses. */
+.bulk-cell-detail {
+  padding: 0;
+}
+.bulk-detailbtn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  width: 100%;
+  padding: 6px 8px;
+  font: inherit;
+  font-size: 13px;
+  color: var(--text);
+  background: var(--surface-sunken);
+  border: 0;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+.bulk-detailbtn:hover:not(:disabled) {
+  background: var(--accent-subtle);
+  color: var(--accent);
+}
+.bulk-detailmark {
+  font-size: 11px;
+  color: var(--text-subtle);
+}
+.bulk-detailpanel {
+  margin-top: 16px;
+  border: 1px solid var(--accent-border);
+  border-radius: var(--radius);
+  background: var(--surface-sunken);
+  padding: 12px;
+}
+.bulk-detailhead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.bulk-detailclose {
+  font: inherit;
+  font-size: 12.5px;
+  color: var(--accent);
+  background: none;
+  border: 0;
+  cursor: pointer;
+}

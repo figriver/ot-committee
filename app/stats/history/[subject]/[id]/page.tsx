@@ -55,6 +55,7 @@ export default async function HistoryPage({
     value: r.value,
     updatedBy: r.updatedBy,
     locked: isLockedAt(r.weekEnding, lockCfg),
+    detail: r.detail,
   }));
   // The graph reads the same entries as the table, over its own selectable
   // window (Piece 3: scale = granularity, range = window, scroll = pan).

@@ -11,6 +11,9 @@ import { WinComposer } from '@/components/win-composer';
 import { getPostsForPicker } from '@/lib/stats';
 import { listWins } from '@/lib/wins';
 import { StatsSubNav } from '@/components/stats-subnav';
+import { DetailEntryCard } from '@/components/detail-entry';
+import { detailKinds, linesFor } from '@/lib/detail-lines';
+import { specFor, HOURS_KIND } from '@/lib/stat-details';
 
 export const dynamic = 'force-dynamic';
 
@@ -35,9 +38,27 @@ export default async function ReportPage({
   const nextWeek = addDaysISO(weekEnding, 7);
 
   const view = await getReportView(member.id, weekEnding, sp.post);
+
+
   // Null = this member is not responsible for that post (it devolved to someone
   // else, or never rolled up to them). Not found rather than a silent redirect.
   if (!view) notFound();
+
+  // Stats that owe the report a detail table are entered in their own card (the
+  // value and its rows save together), so they are held OUT of the plain form.
+  const kinds = await detailKinds(view.ownStats.map((s) => s.statId));
+  const detailStats = await Promise.all(
+    view.ownStats
+      .filter((s) => kinds.has(s.statId))
+      .map(async (s) => ({
+        ...s,
+        kind: kinds.get(s.statId)!,
+        lines: await linesFor(s.statId, member.id, weekEnding),
+      })),
+  );
+  const plainStats = view.ownStats.filter((s) => !kinds.has(s.statId));
+  const hoursSpec = specFor(HOURS_KIND);
+  const hoursLines = hoursSpec ? await linesFor(null, member.id, weekEnding) : [];
 
   const lockCfg = await getLockConfig();
   const locked = isLockedAt(weekEnding, lockCfg);
@@ -142,8 +163,10 @@ export default async function ReportPage({
           <input type="hidden" name="week_ending" value={weekEnding} />
           <input type="hidden" name="return_post" value={sp.post ?? ''} />
 
-          {/* Hours is per MEMBER, not per post — only at the root. */}
-          {atRoot && (
+          {/* Hours is per MEMBER, not per post — only at the root. With a
+              detail spec it moves to its own card below (value + project rows
+              save together); without one it stays a plain field here. */}
+          {atRoot && !hoursSpec && (
             <section className="rpt-section">
               <label className="rpt-label" htmlFor="hours">
                 Hours <span className="rpt-hint">(you, this week — once)</span>
@@ -174,14 +197,14 @@ export default async function ReportPage({
             </p>
           )}
 
-          {hasOwnStats && (
+          {plainStats.length > 0 && (
             <section className="rpt-section">
               <div className="rpt-post">
                 <span className="rpt-post-title">
                   {atRoot ? 'Stats on your posts' : `Stats on ${view.title}`}
                 </span>
               </div>
-              {view.ownStats.map((s) => (
+              {plainStats.map((s) => (
                 <div key={s.statId} className="rpt-stat">
                   <label className="rpt-stat-label" htmlFor={`stat_${s.statId}`}>
                     {s.name}
@@ -212,6 +235,48 @@ export default async function ReportPage({
             </button>
           )}
         </form>
+
+        {/* Stats whose report needs a detail table. Outside the plain form for
+            the same reason as the adjustables: each saves itself, atomically
+            with its rows, so a value can never land without its detail. */}
+        {(hoursSpec || detailStats.length > 0) && (
+          <section className="adj-section">
+            <h3 className="adj-heading">
+              Stats with a detail table
+              <span className="adj-headinghint">
+                the report wants the who / what / where behind the number
+              </span>
+            </h3>
+            <div className="de-grid">
+              {atRoot && hoursSpec && (
+                <DetailEntryCard
+                  subjectType="hours"
+                  statId={null}
+                  statName="Hours"
+                  heading="My Hours"
+                  detailKind={HOURS_KIND}
+                  weekEnding={weekEnding}
+                  initialValue={view.hours == null ? '' : String(view.hours)}
+                  initialLines={hoursLines}
+                  readOnly={locked}
+                />
+              )}
+              {detailStats.map((s) => (
+                <DetailEntryCard
+                  key={s.statId}
+                  subjectType="stat"
+                  statId={s.statId}
+                  statName={s.name}
+                  detailKind={s.kind}
+                  weekEnding={weekEnding}
+                  initialValue={s.value ?? ''}
+                  initialLines={s.lines}
+                  readOnly={locked}
+                />
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Adjustable stats (base + manual): entered outside the plain form,
             since each saves its own base+manual+note via saveAdjustment. */}

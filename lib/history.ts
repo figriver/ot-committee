@@ -1,5 +1,7 @@
 import 'server-only';
 import { getServiceClient } from '@/lib/supabase/server';
+import { linesForSubject, detailKindOf } from '@/lib/detail-lines';
+import { specFor, summarize } from '@/lib/stat-details';
 import { currentWeekEnding, addDaysISO } from '@/lib/week';
 import { loadHierarchy } from '@/lib/hierarchy';
 import { getAdjustableWeekly, type BaseKind } from '@/lib/adjustable';
@@ -16,11 +18,21 @@ export type SubjectType = 'stat' | 'hours';
 export const PAGE_SIZE = 12; // weeks per page
 const MIN_BACKFILL_WEEKS = 104; // always allow paging ~2 years back to backfill
 
+export type DetailLineView = {
+  id: string;
+  /** Spec-ordered values, already summarised for display. */
+  summary: string;
+  memberName: string;
+};
+
 export type HistoryRow = {
   weekEnding: string;
   value: string | null; // null = not reported
   updatedBy: string | null; // display name of whoever last wrote it
   updatedAt: string | null;
+  /** The who/what/where behind the number (0022). Empty for the 170 weeks of
+   *  imported history, which predates detail — absence is normal, not a gap. */
+  detail: DetailLineView[];
 };
 
 export type Note = {
@@ -34,6 +46,8 @@ export type Note = {
 };
 
 export type HistoryView = {
+  /** The detail spec these rows carry, or null when this stat is just a number. */
+  detailKind: string | null;
   subjectType: SubjectType;
   subjectId: string;
   title: string; // e.g. the stat name, or "Hours"
@@ -178,9 +192,28 @@ async function getAdjustableHistory(
       value: t != null ? String(Math.round(t * 100) / 100) : null,
       updatedBy: who,
       updatedAt: null,
+      detail: [],
     };
   });
+
+  // Attach the detail lines for the weeks on screen. A stat with no
+  // detail_kind — and every imported week, which predates 0022 — simply
+  // comes back empty, so absence renders as absence rather than a gap.
+  const detailKind = await detailKindOf('stat', stat.id);
+  const detailSpec = specFor(detailKind);
+  if (detailSpec) {
+    const byWeek = await linesForSubject('stat', stat.id, rows.map((r) => r.weekEnding));
+    for (const r of rows) {
+      r.detail = (byWeek.get(r.weekEnding) ?? []).map((l) => ({
+        id: l.id,
+        summary: summarize(detailSpec, l.fields),
+        memberName: l.memberName,
+      }));
+    }
+  }
+
   return {
+    detailKind,
     subjectType: 'stat',
     subjectId: stat.id,
     title: stat.name,
@@ -258,10 +291,29 @@ export async function getStatHistory(
       value: e && e.value != null ? String(e.value) : null,
       updatedBy: who ? names.get(who) ?? null : null,
       updatedAt: e && e.value != null ? e.updated_at : null,
+      detail: [],
     };
   });
 
+
+  // Attach the detail lines for the weeks on screen. A stat with no
+  // detail_kind — and every imported week, which predates 0022 — simply
+  // comes back empty, so absence renders as absence rather than a gap.
+  const detailKind = await detailKindOf('stat', stat.id);
+  const detailSpec = specFor(detailKind);
+  if (detailSpec) {
+    const byWeek = await linesForSubject('stat', stat.id, rows.map((r) => r.weekEnding));
+    for (const r of rows) {
+      r.detail = (byWeek.get(r.weekEnding) ?? []).map((l) => ({
+        id: l.id,
+        summary: summarize(detailSpec, l.fields),
+        memberName: l.memberName,
+      }));
+    }
+  }
+
   return {
+    detailKind,
     subjectType: 'stat',
     subjectId: statId,
     title: stat.name,
@@ -328,11 +380,30 @@ export async function getHoursHistory(
       value: r && r.hours != null ? String(r.hours) : null,
       updatedBy: who ? names.get(who) ?? null : null,
       updatedAt: r && r.hours != null ? r.updated_at : null,
+      detail: [],
     };
   });
 
   const isSelf = targetMemberId === member.id;
+
+  // Attach the detail lines for the weeks on screen. A stat with no
+  // detail_kind — and every imported week, which predates 0022 — simply
+  // comes back empty, so absence renders as absence rather than a gap.
+  const detailKind = await detailKindOf('hours', targetMemberId);
+  const detailSpec = specFor(detailKind);
+  if (detailSpec) {
+    const byWeek = await linesForSubject('hours', targetMemberId, rows.map((r) => r.weekEnding));
+    for (const r of rows) {
+      r.detail = (byWeek.get(r.weekEnding) ?? []).map((l) => ({
+        id: l.id,
+        summary: summarize(detailSpec, l.fields),
+        memberName: l.memberName,
+      }));
+    }
+  }
+
   return {
+    detailKind,
     subjectType: 'hours',
     subjectId: targetMemberId,
     title: 'Hours',

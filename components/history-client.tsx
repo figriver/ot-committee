@@ -26,6 +26,9 @@ export type RowView = {
   value: string | null; // null = not reported
   updatedBy: string | null;
   locked: boolean; // the week closed — read-only except to an admin (override)
+  /** The report's who/what/where behind this number (0022). Empty is normal —
+   *  every imported week predates detail. */
+  detail: { id: string; summary: string; memberName: string }[];
 };
 
 export type NoteView = {
@@ -322,6 +325,18 @@ function ValueRow({
           </span>
         ) : (
           <span className="sh-value">{row.value}</span>
+        )}
+        {/* The who/what/where behind the number (0022). Imported weeks have
+            none, and simply show nothing. */}
+        {row.detail.length > 0 && (
+          <ul className="sh-detail">
+            {row.detail.map((d) => (
+              <li key={d.id} className="sh-detailline">
+                <span className="sh-detailtext">{d.summary}</span>
+                <span className="sh-detailwho">{d.memberName}</span>
+              </li>
+            ))}
+          </ul>
         )}
       </td>
       <td data-label="Updated By" className="sh-td-by">
