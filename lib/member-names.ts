@@ -63,6 +63,21 @@ export async function memberDisplayNames(
   return out;
 }
 
+/**
+ * Every member as { id, name } for a picker (assignee, event owner, …), named
+ * by the same resolver so a dropdown and a byline never disagree. Sorted by the
+ * resolved name, not by email.
+ */
+export async function memberOptions(): Promise<{ id: string; name: string }[]> {
+  const supa = getServiceClient();
+  const { data } = await supa.from('members').select('id').order('email', { ascending: true });
+  const ids = (data ?? []).map((m) => m.id as string);
+  const names = await memberDisplayNames(ids);
+  return ids
+    .map((id) => ({ id, name: names.get(id) ?? 'Unknown' }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
+
 /** Display name for a single member; null when the member doesn't exist. */
 export async function memberDisplayName(id: string | null): Promise<string | null> {
   if (!id) return null;

@@ -136,6 +136,14 @@ Compose screens from these rather than inventing per-screen chrome:
   to the action that fills it.
 - **Status pills** — the status families above (`OPEN` = success, counts to chase
   = danger, partial = warn).
+- **Month calendar** (`.ec-*`) — a hairline 7-column grid on `--border`, event
+  chips in `--accent-subtle`. A day with more than one event is tinted `--warn`:
+  a clash is a *warning*, not decoration. On mobile the grid keeps its shape and
+  the chips become dots, with the month repeated below as a list.
+- **Checklist** (`.cl-*`) — the reusable assignable-action primitive
+  ([CHECKLIST.md](CHECKLIST.md)), not an events widget: a done-state box that
+  fills `--success`, an assignee pill (`--accent-subtle` when it's yours, a
+  dashed hairline when unassigned), and `--danger` only for overdue.
 
 ---
 

@@ -35,6 +35,11 @@ export function AccountBar({
         <Link href="/meeting" className="acct-link">
           Meeting
         </Link>
+        {/* Events: the calendar + each event's checklist (the reusable
+            assignable-action primitive — CHECKLIST.md). */}
+        <Link href="/events" className="acct-link">
+          Events
+        </Link>
         {isAdmin && (
           <Link href="/settings" className="acct-link">
             Settings
