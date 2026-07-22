@@ -35,6 +35,13 @@ yarn-error.log*
 /supabase/.branches
 /supabase/.temp
 
-# Source data files for imports (not code)
+# Source data files for imports (not code).
+# hats/ holds the OTC hat documents (.docx/.doc/.rtf/.pdf) that were parsed into
+# post_writeups and general_hats. They carry members' real names, emails and
+# phone numbers — PII that must not enter the repo. They are import INPUTS: the
+# text that mattered is in the database, and .vercelignore keeps them off the
+# web host too.
+hats/
+reference/
 *.xlsx
 *.csv

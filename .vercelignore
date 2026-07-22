@@ -1,0 +1,32 @@
+# What must NOT be uploaded to Vercel.
+#
+# `vercel deploy` uploads the WORKING TREE, not the last commit — an untracked
+# file that is merely present ships to production. (That is how the events UI
+# reached prod ahead of its migrations.) So exclusion is by this file, not by
+# what happens to be committed.
+#
+# Deliberately a superset of .gitignore's runtime entries: depending on CLI
+# version a .vercelignore can REPLACE .gitignore rather than add to it, and
+# uploading node_modules or .env.local would be far worse than a redundant line.
+
+node_modules
+.next
+out
+build
+.vercel
+.env
+.env*.local
+*.tsbuildinfo
+
+# ---- source data, not application code -------------------------------------
+# Import INPUTS that were parsed into the database once (hat write-ups, stat
+# spreadsheets). They contain members' names, emails and phone numbers, they are
+# never read at build or run time, and they have no business on a web host.
+hats/
+reference/
+*.xlsx
+*.csv
+*.docx
+*.doc
+*.dotx
+*.rtf

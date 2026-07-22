@@ -68,6 +68,36 @@ Set the same env vars in the Vercel project settings, then deploy. Keep
 `SUPABASE_SERVICE_ROLE_KEY` unexposed (no `NEXT_PUBLIC_` prefix). Production has
 `DB_SCHEMA=public` — never set it to `dev` there.
 
+### ⚠️ `vercel deploy` ships the WORKING TREE, not the last commit
+
+Every file present in the project directory is uploaded unless it is ignored —
+**untracked is not the same as excluded.** A half-finished feature sitting in the
+working tree goes live the next time anyone deploys, without a commit, a review
+or a decision.
+
+This has already bitten once: the events UI (`app/events/`, `lib/events.ts`,
+`components/event-*.tsx`) was untracked-but-present and shipped to production
+alongside an unrelated deploy, while migrations 0018/0019 had only been applied
+to `dev`. The tables did not exist in `public`, so `/events` returned HTTP 500
+for every member until the migrations were applied.
+
+**Before any production deploy:**
+
+1. `git status --porcelain` — read what is uncommitted *and* what is untracked.
+2. For each thing riding along, decide deliberately: commit it, exclude it in
+   `.vercelignore`, or confirm it is safe to ship as-is.
+3. For any feature going live, confirm **its migrations are applied to `public`**,
+   not just `dev` — code and schema ship on different tracks, and only the code
+   ships automatically.
+4. Say out loud, in the deploy message, what is riding along.
+
+`.vercelignore` is what actually keeps files out of the upload (it is a superset
+of the runtime parts of `.gitignore`, since a `.vercelignore` can *replace*
+rather than extend `.gitignore` depending on CLI version). It excludes the import
+**source documents** — `hats/`, `reference/`, spreadsheets, Word files — which
+carry members' names, emails and phone numbers, are parsed into the database
+once, and are never read at build or run time.
+
 ## Design system
 
 Tokens and primitives are defined **once** in the DESIGN TOKENS block at the top
