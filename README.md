@@ -96,3 +96,39 @@ The essentials:
 - `/board/[n]` — division detail: departments side by side, sections and posts
   inside each, VFPs along the bottom (each department's + the division's).
   Everything is editable in place.
+- `/events` — the events **calendar** (month grid; days with more than one event
+  are flagged as a clash), with a list view and "Assigned to you".
+- `/events/[id]` — one event: its facts, its turnout headcounts, and its
+  **checklist**.
+- `/post/[id]` — a post's **hat write-up**: Purpose / Duties / Stats / VFP. The
+  post's effective holder or an admin edits it in place. Reachable from the
+  board: every post box's caret menu opens it.
+- `/hatting` — **Post Hats**: a searchable index of every post whose hat is
+  written (search matches the post name *and* the hat's text, server-side), with
+  the un-hatted posts listed underneath so the gaps stay visible.
+- `/hatting/general`, `/hatting/general/[id]` — **General Hats**: committee-level
+  hat material that belongs to no post, grouped (Required Reading / Reference).
+  Everyone reads; admins create, edit and reorder. (`/hats*` forwards here — the
+  old location before Hatting became a top-level nav item.)
+
+## Hats: two kinds, one renderer
+
+A **post hat** (`post_writeups`, migration 0017) answers *"here is your job"*; a
+**general hat** (`general_hats`, migration 0020) answers *"here is what every
+member needs to know"*. Both are the same kind of document — a markdown subset of
+`## sections`, `- bullets` and `**bold**` — so both render through
+`components/hat-body.tsx` and are edited by `components/hat-editor.tsx`. Add a
+third kind of hat by binding that editor to a new save action, not by writing a
+second renderer.
+
+General-hat **groups are data** (`general_hat_groups`), not a union type: a third
+category is an `INSERT`, not a migration plus a code change.
+
+## The checklist primitive
+
+`checklist_items` (migration 0018) is **not an events table** — it is the generic
+"assignable action with a done-state" that Slice 4's Programs / Projects /
+Orders / Compliance will reuse unchanged. Events (migration 0019) are only its
+first parent type. Read **[CHECKLIST.md](CHECKLIST.md)** before building anything
+that needs "someone has to do this by then" — adding a parent type is a registry
+entry, a trigger, and four one-line actions, not a new table.

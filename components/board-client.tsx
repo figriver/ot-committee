@@ -12,6 +12,7 @@ import {
   type ReactNode,
 } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   addDepartment,
   addExecutive,
@@ -267,12 +268,28 @@ function useRowActions() {
   return (fn: () => Promise<void>) => start(() => fn());
 }
 
+/**
+ * "Open hat" for a post's menu. Every box on the board that IS a post gets it,
+ * so the hat is reachable from the board itself and not only from the post's
+ * detail page. Client-side navigation, same target as the `hat ↗` chip.
+ */
+function useHatItem() {
+  const router = useRouter();
+  return (postId: string): MenuItem => ({
+    label: 'Open hat ↗',
+    onSelect: () => router.push(`/post/${postId}`),
+  });
+}
+
 function PostRow({ post }: { post: PostWithHolders }) {
   const { open } = useMenu();
   const edit = useEditable('posts', post.id, 'title', post.title);
   const run = useRowActions();
+  const hatItem = useHatItem();
 
   const items: MenuItem[] = [
+    hatItem(post.id),
+    { separator: true, label: '' },
     { label: 'Edit title', onSelect: () => edit.setEditing(true) },
     { label: 'Add Position', onSelect: () => run(() => addPost(post.department_id!, post.section_id)) },
     { label: 'Add Holder', onSelect: () => run(() => addHolder(post.id)) },
@@ -462,6 +479,7 @@ function ChairmanBox({ post }: { post: ExecPost | null }) {
     if (post) await setPostHolder(post.id, v);
   });
   const run = useRowActions();
+  const hatItem = useHatItem();
   if (!post) {
     return (
       <div className="ob-exec chairman">
@@ -471,6 +489,8 @@ function ChairmanBox({ post }: { post: ExecPost | null }) {
     );
   }
   const items: MenuItem[] = [
+    hatItem(post.id),
+    { separator: true, label: '' },
     { label: 'Edit title', onSelect: () => edit.setEditing(true) },
     { label: post.holderName ? 'Edit holder' : 'Set holder', onSelect: () => holderEdit.setEditing(true) },
     ...(post.holderName
@@ -550,6 +570,7 @@ function HeadBox({ post, kind }: { post: PostWithHolders | null; kind: 'division
     if (post) await setPostHolder(post.id, v);
   });
   const run = useRowActions();
+  const hatItem = useHatItem();
 
   if (!post) {
     return (
@@ -561,6 +582,8 @@ function HeadBox({ post, kind }: { post: PostWithHolders | null; kind: 'division
   }
 
   const items: MenuItem[] = [
+    hatItem(post.id),
+    { separator: true, label: '' },
     { label: 'Edit title', onSelect: () => titleEdit.setEditing(true) },
     { label: holderName ? 'Edit holder' : 'Set holder', onSelect: () => holderEdit.setEditing(true) },
     ...(holderName
@@ -606,7 +629,10 @@ function ExecBox({ post }: { post: ExecPost }) {
     await setPostHolder(post.id, v);
   });
   const run = useRowActions();
+  const hatItem = useHatItem();
   const items: MenuItem[] = [
+    hatItem(post.id),
+    { separator: true, label: '' },
     { label: 'Edit title', onSelect: () => edit.setEditing(true) },
     { label: post.holderName ? 'Edit holder' : 'Set holder', onSelect: () => holderEdit.setEditing(true) },
     ...(post.holderName

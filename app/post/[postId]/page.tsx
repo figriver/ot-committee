@@ -54,6 +54,14 @@ export default async function PostDetailPage({
           </Link>
         </div>
 
+        {/* This post's hat is only half of what a member is hatted on — the
+            committee-level material sits in General Hats. */}
+        <p className="pw-alsoread">
+          Every member also reads the <Link href="/hatting/general">general hats</Link> — the member
+          hat, meeting guidelines and committee reference. All post hats are indexed under{' '}
+          <Link href="/hatting">Hatting</Link>.
+        </p>
+
         <WriteupEditor
           postId={postId}
           initialBody={writeup.body}

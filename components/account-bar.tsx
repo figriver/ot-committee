@@ -23,8 +23,11 @@ export function AccountBar({
     <div className="acct-bar">
       <span className="acct-brand">OT Committee</span>
       <nav className="acct-nav">
+        {/* "Org" is dropped on a phone: six items fit one 375px row as "Board",
+            but not as "Org Board" — and a nav that wraps to a second row for a
+            single item reads like a mistake. */}
         <Link href="/board" className="acct-link">
-          Org Board
+          <span className="acct-wide">Org </span>Board
         </Link>
         {/* One Stats top-level → My Stats (the personal dashboard). The three
             stats surfaces (My Stats / Enter / Committee) switch from the
@@ -34,6 +37,11 @@ export function AccountBar({
         </Link>
         <Link href="/meeting" className="acct-link">
           Meeting
+        </Link>
+        {/* Hatting: the post-hat index + the general (committee-level) hats.
+            Lands on Post Hats; the sub-nav switches between the two. */}
+        <Link href="/hatting" className="acct-link">
+          Hatting
         </Link>
         {/* Events: the calendar + each event's checklist (the reusable
             assignable-action primitive — CHECKLIST.md). */}
