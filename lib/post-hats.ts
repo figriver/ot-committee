@@ -81,9 +81,11 @@ export async function getPostHatIndex(q = ''): Promise<PostHatIndex> {
     supa.from('post_writeups').select('post_id, body, updated_by, updated_at'),
   ]);
 
+  // post_id is nullable since 0021 — an UNATTACHED hat must not be counted as a
+  // post's hat, or "N of 106 posts have a hat" overstates the coverage.
   const byPost = new Map(
     (writeups ?? [])
-      .filter((w) => ((w.body as string | null) ?? '').trim() !== '')
+      .filter((w) => w.post_id && ((w.body as string | null) ?? '').trim() !== '')
       .map((w) => [w.post_id as string, w]),
   );
   const names = await memberDisplayNames([...byPost.values()].map((w) => w.updated_by as string | null));

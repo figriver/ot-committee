@@ -1,7 +1,8 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { requireMember } from '@/lib/auth';
-import { getPostHeader, getWriteup, canEditPostWriteup } from '@/lib/writeups';
+import { getPostHeader, getWriteup, canEditPostWriteup, listPostOptions } from '@/lib/writeups';
+import { PostPicker } from '@/components/post-picker';
 import { AccountBar } from '@/components/account-bar';
 import { WriteupEditor } from '@/components/writeup-editor';
 
@@ -20,9 +21,13 @@ export default async function PostDetailPage({
   const header = await getPostHeader(postId);
   if (!header) notFound();
 
-  const [writeup, canEdit] = await Promise.all([
+  const isAdmin = member.role === 'admin';
+  const [writeup, canEdit, posts] = await Promise.all([
     getWriteup(postId),
     canEditPostWriteup(member, postId),
+    // Moving a hat between posts is an org-board decision — admin only, so the
+    // option list is not even built for anyone else.
+    isAdmin ? listPostOptions() : Promise.resolve([]),
   ]);
 
   const updatedAtLabel = writeup.updatedAt
@@ -69,6 +74,21 @@ export default async function PostDetailPage({
           updatedAtLabel={updatedAtLabel}
           canEdit={canEdit}
         />
+
+        {isAdmin && writeup.hatId && (
+          <section className="gh-admin">
+            <h2 className="gh-admintitle">Which post is this hat on?</h2>
+            <div className="gh-adminform">
+              <PostPicker
+                hatId={writeup.hatId}
+                posts={posts}
+                currentPostId={postId}
+                allowDetach
+                label="Move this hat to a different post, or detach it into the unattached pool."
+              />
+            </div>
+          </section>
+        )}
       </div>
     </>
   );

@@ -1,8 +1,10 @@
 import Link from 'next/link';
 import { requireMember } from '@/lib/auth';
 import { getPostHatIndex } from '@/lib/post-hats';
+import { listUnattachedHats } from '@/lib/writeups';
 import { HattingSubNav } from '@/components/hatting-subnav';
 import { HatSearch } from '@/components/hat-search';
+import { createUnattachedHat } from '@/app/hatting/post-hat-actions';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,8 +19,17 @@ export default async function PostHatsPage({
 }) {
   const member = await requireMember();
   const { q } = await searchParams;
-  const index = await getPostHatIndex(q ?? '');
+  const [index, unattached] = await Promise.all([
+    getPostHatIndex(q ?? ''),
+    listUnattachedHats(),
+  ]);
   const { hatted, unhatted, totalPosts, totalHatted, query } = index;
+  const isAdmin = member.role === 'admin';
+  // The pool is a small, unordered set that no one searches by post name, so it
+  // is filtered by title only — and shown whole when there is no query.
+  const pool = query
+    ? unattached.filter((u) => u.title.toLowerCase().includes(query.toLowerCase()))
+    : unattached;
 
   const resultLabel = query
     ? `${hatted.length} hat${hatted.length === 1 ? '' : 's'} · ${unhatted.length} un-hatted post${
@@ -84,6 +95,70 @@ export default async function PostHatsPage({
           )}
         </section>
 
+        {(pool.length > 0 || isAdmin) && (
+          <section className="ph-group">
+            <div className="ph-grouphead">
+              <h2 className="ph-grouptitle">Unattached hats</h2>
+              <span className={`ph-count${pool.length ? ' ph-pool' : ''}`}>{pool.length}</span>
+            </div>
+            <p className="ph-groupblurb">
+              Written, but on no post yet — so nobody holds them. Attach one to put it on a
+              post’s page.
+            </p>
+
+            {pool.length === 0 ? (
+              <p className="ph-empty">
+                {query ? 'No unattached hat matches that search.' : 'Nothing waiting to be attached.'}
+              </p>
+            ) : (
+              <ul className="ph-list">
+                {pool.map((u) => (
+                  <li key={u.id}>
+                    <Link href={`/hatting/hat/${u.id}`} className="ph-row">
+                      <span className="ph-main">
+                        <span className="ph-title">
+                          {u.title}
+                          {!u.hasContent && <span className="ph-hfa">Empty</span>}
+                        </span>
+                        <span className="ph-ctx">On no post</span>
+                        {u.excerpt && <span className="ph-snippet">{u.excerpt}</span>}
+                      </span>
+                      <span className="ph-side">
+                        <span className="ph-attach">Attach to a post →</span>
+                        {u.updatedByName && (
+                          <span className="ph-by">Updated by {u.updatedByName}</span>
+                        )}
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            {isAdmin && (
+              <details className="gh-new ph-newhat">
+                <summary className="gh-newsummary">+ Start a hat with no post</summary>
+                <form action={createUnattachedHat} className="gh-newform">
+                  <label className="gh-field">
+                    <span className="gh-label">What is this hat for?</span>
+                    <input
+                      type="text"
+                      name="title"
+                      required
+                      maxLength={120}
+                      placeholder="e.g. Bookstore Officer"
+                      className="gh-input"
+                    />
+                  </label>
+                  <button type="submit" className="gh-create">
+                    Create &amp; write
+                  </button>
+                </form>
+              </details>
+            )}
+          </section>
+        )}
+
         {/* The COUNT of gaps is the signal and is always visible; the full list
             is 90-odd rows on a fresh board, so it opens on demand — except when
             it is short, or when a search is running and the matches are the
@@ -119,7 +194,7 @@ export default async function PostHatsPage({
           </details>
         </section>
 
-        {member.role === 'admin' && (
+        {isAdmin && (
           <p className="ph-foot">
             A post hat is written on the post itself — open any post from the{' '}
             <Link href="/board">org board</Link> or from a row above.
