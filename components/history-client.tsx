@@ -1,5 +1,6 @@
 'use client';
 
+import { refusalMessage, type ActionResult } from '@/lib/action-result';
 import { useEffect, useRef, useState, useTransition } from 'react';
 import Link from 'next/link';
 import {
@@ -264,7 +265,15 @@ function ValueRow({
     }
     start(async () => {
       try {
-        await correctValue(subjectType, subjectId, row.weekEnding, val);
+        const refused = refusalMessage(
+          await correctValue(subjectType, subjectId, row.weekEnding, val),
+        );
+        if (refused) {
+          setVal(row.value ?? '');
+          onError(refused);
+          onDone();
+          return;
+        }
         onError(null);
         onDone();
       } catch (e) {
@@ -380,7 +389,13 @@ function NotesTab({ subjectType, subjectId, notes, canEdit, isAdmin, today }: Pr
   const submit = () => {
     start(async () => {
       try {
-        await addNote(subjectType, subjectId, date, body, onGraph);
+        const refused = refusalMessage(
+          await addNote(subjectType, subjectId, date, body, onGraph),
+        );
+        if (refused) {
+          setError(refused);
+          return;
+        }
         setBody('');
         setOnGraph(false);
         setDate(today);
@@ -486,7 +501,12 @@ function NoteItem({
     setOnGraph(next);
     start(async () => {
       try {
-        await setNoteShowOnGraph(note.id, next);
+        const refused = refusalMessage(await setNoteShowOnGraph(note.id, next));
+        if (refused) {
+          setOnGraph(!next); // roll back the optimistic flip
+          onError(refused);
+          return;
+        }
         onError(null);
       } catch (e) {
         setOnGraph(!next); // roll back the optimistic flip
@@ -495,10 +515,14 @@ function NoteItem({
     });
   };
 
-  const run = (fn: () => Promise<void>) =>
+  const run = (fn: () => Promise<ActionResult | void>) =>
     start(async () => {
       try {
-        await fn();
+        const refused = refusalMessage(await fn());
+        if (refused) {
+          onError(refused);
+          return; // stay in edit mode with the text intact
+        }
         onError(null);
         setEditing(false);
       } catch (e) {

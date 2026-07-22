@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation';
 import { getCurrentMember } from '@/lib/auth';
 import { getServiceClient } from '@/lib/supabase/server';
 import { getHatById, canEditHat } from '@/lib/writeups';
+import { refuse, done, type ActionResult } from '@/lib/action-result';
 
 /**
  * Save a hat's body BY HAT ID — the unattached counterpart of saveWriteup,
@@ -12,14 +13,14 @@ import { getHatById, canEditHat } from '@/lib/writeups';
  * either way (canEditHat): an admin, or the post's effective holder once there
  * is a post. An unattached hat has no holder, so it is admin-only until it lands.
  */
-export async function saveHatBody(hatId: string, body: string): Promise<void> {
+export async function saveHatBody(hatId: string, body: string): Promise<ActionResult> {
   const member = await getCurrentMember();
   if (!member) redirect('/login');
 
   const hat = await getHatById(hatId);
-  if (!hat) throw new Error('That hat no longer exists.');
+  if (!hat) return refuse('That hat no longer exists.');
   if (!(await canEditHat(member, hat))) {
-    throw new Error('Only an admin can edit a hat that is not on a post.');
+    return refuse('Only an admin can edit a hat that is not on a post.');
   }
 
   const supa = getServiceClient();
@@ -32,4 +33,5 @@ export async function saveHatBody(hatId: string, body: string): Promise<void> {
   revalidatePath(`/hatting/hat/${hatId}`);
   revalidatePath('/hatting');
   if (hat.postId) revalidatePath(`/post/${hat.postId}`);
+  return done;
 }

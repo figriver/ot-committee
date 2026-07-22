@@ -36,7 +36,11 @@ export function EventAttendance({
     start(async () => {
       setError(null);
       try {
-        await recordAttendance(eventId, c, a);
+        const result = await recordAttendance(eventId, c, a);
+        if (!result.ok) {
+          setError(result.message);
+          return;
+        }
         setSaved(true);
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Could not save that.');

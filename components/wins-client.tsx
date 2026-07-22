@@ -1,5 +1,6 @@
 'use client';
 
+import { refusalMessage } from '@/lib/action-result';
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { deleteWin } from '@/app/wins/actions';
@@ -108,6 +109,7 @@ export function WinRow({
 }) {
   const [pending, start] = useTransition();
   const [gone, setGone] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   if (gone) return null;
 
   return (
@@ -133,7 +135,14 @@ export function WinRow({
           title="Remove"
           onClick={() =>
             start(async () => {
-              await deleteWin(win.id);
+              // Hide the row only if the server actually removed it — a refusal
+              // ("you can only remove your own wins") comes back as a value now,
+              // so an unchecked setGone would hide a win that still exists.
+              const refused = refusalMessage(await deleteWin(win.id));
+              if (refused) {
+                setError(refused);
+                return;
+              }
               setGone(true);
             })
           }
@@ -141,6 +150,7 @@ export function WinRow({
           ✕
         </button>
       )}
+      {error && <p className="win-err">{error}</p>}
     </li>
   );
 }

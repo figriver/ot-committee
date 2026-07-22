@@ -1,5 +1,6 @@
 'use client';
 
+import { refusalMessage } from '@/lib/action-result';
 import { useEffect, useRef, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { setStatRollup } from '@/app/stats/history/actions';
@@ -127,6 +128,7 @@ export function StatGraph({
     { kind: 'point'; i: number } | { kind: 'note'; id: string } | null
   >(null);
   const [pending, start] = useTransition();
+  const [rollupError, setRollupError] = useState<string | null>(null);
 
   // On a phone the plot is wider than the screen. Open it at the RIGHT edge —
   // the newest periods are what a reader wants first; left-anchored, the visible
@@ -279,8 +281,13 @@ export function StatGraph({
               disabled={pending}
               onChange={(e) => {
                 const next = e.target.value as Rollup;
+                setRollupError(null);
                 start(async () => {
-                  await setStatRollup(statId, next);
+                  // The select is controlled by the `rollup` PROP, so a refused
+                  // change snaps back on its own — all that is missing is the
+                  // reason, which used to vanish into Next's redaction.
+                  const refused = refusalMessage(await setStatRollup(statId, next));
+                  if (refused) setRollupError(refused);
                 });
               }}
             >
@@ -288,6 +295,7 @@ export function StatGraph({
               <option value="average">Average</option>
               <option value="last">Last value</option>
             </select>
+            {rollupError && <span className="gr-rollerr">{rollupError}</span>}
           </label>
         )}
       </div>

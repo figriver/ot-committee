@@ -1,16 +1,17 @@
-'use server';
+"use server";
 
-import { revalidatePath } from 'next/cache';
-import { redirect } from 'next/navigation';
-import { getCurrentMember, requireAdmin } from '@/lib/auth';
-import { getServiceClient } from '@/lib/supabase/server';
-import { getWeekLockDow, weekEndingOnOrAfter, isWeekEnding } from '@/lib/week';
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import { getCurrentMember, requireAdmin } from "@/lib/auth";
+import { getServiceClient } from "@/lib/supabase/server";
+import { getWeekLockDow, weekEndingOnOrAfter, isWeekEnding } from "@/lib/week";
+import { deny, guard, type ActionResult } from "@/lib/action-result";
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 function revalidate() {
-  revalidatePath('/wins');
-  revalidatePath('/dashboard'); // the login feed
+  revalidatePath("/wins");
+  revalidatePath("/dashboard"); // the login feed
 }
 
 /** The reporting week (week_ending) a win_date falls in. */
@@ -28,27 +29,29 @@ export async function addWin(
   body: string,
   areaPostId: string,
   winDate: string,
-): Promise<void> {
-  const member = await getCurrentMember();
-  if (!member) redirect('/login');
+): Promise<ActionResult> {
+  return guard(async () => {
+    const member = await getCurrentMember();
+    if (!member) redirect("/login");
 
-  const text = body.trim();
-  if (text === '') throw new Error('A win needs some text.');
-  if (!ISO_DATE.test(winDate) || !isWeekEnding(winDate)) throw new Error('Pick a date.');
-  const area = areaPostId.trim() || null;
+    const text = body.trim();
+    if (text === "") deny("A win needs some text.");
+    if (!ISO_DATE.test(winDate) || !isWeekEnding(winDate)) deny("Pick a date.");
+    const area = areaPostId.trim() || null;
 
-  const supa = getServiceClient();
-  const { error } = await supa.from('wins').insert({
-    body: text,
-    win_date: winDate,
-    week_ending: await weekOf(winDate),
-    area_post_id: area,
-    member_id: member.id,
-    is_unattributed: false,
-    created_by: member.id,
+    const supa = getServiceClient();
+    const { error } = await supa.from("wins").insert({
+      body: text,
+      win_date: winDate,
+      week_ending: await weekOf(winDate),
+      area_post_id: area,
+      member_id: member.id,
+      is_unattributed: false,
+      created_by: member.id,
+    });
+    if (error) throw new Error(`addWin: ${error.message}`);
+    revalidate();
   });
-  if (error) throw new Error(`addWin: ${error.message}`);
-  revalidate();
 }
 
 /**
@@ -60,39 +63,47 @@ export async function addUnattributedWin(
   body: string,
   areaPostId: string,
   winDate: string,
-): Promise<void> {
-  const admin = await requireAdmin();
+): Promise<ActionResult> {
+  return guard(async () => {
+    const admin = await requireAdmin();
 
-  const text = body.trim();
-  if (text === '') throw new Error('A win needs some text.');
-  if (!ISO_DATE.test(winDate) || !isWeekEnding(winDate)) throw new Error('Pick a date.');
-  const area = areaPostId.trim() || null;
+    const text = body.trim();
+    if (text === "") deny("A win needs some text.");
+    if (!ISO_DATE.test(winDate) || !isWeekEnding(winDate)) deny("Pick a date.");
+    const area = areaPostId.trim() || null;
 
-  const supa = getServiceClient();
-  const { error } = await supa.from('wins').insert({
-    body: text,
-    win_date: winDate,
-    week_ending: await weekOf(winDate),
-    area_post_id: area,
-    member_id: null,
-    is_unattributed: true,
-    created_by: admin.id,
+    const supa = getServiceClient();
+    const { error } = await supa.from("wins").insert({
+      body: text,
+      win_date: winDate,
+      week_ending: await weekOf(winDate),
+      area_post_id: area,
+      member_id: null,
+      is_unattributed: true,
+      created_by: admin.id,
+    });
+    if (error) throw new Error(`addUnattributedWin: ${error.message}`);
+    revalidate();
   });
-  if (error) throw new Error(`addUnattributedWin: ${error.message}`);
-  revalidate();
 }
 
 /** Delete a win — the member who owns it, or an admin. */
-export async function deleteWin(winId: string): Promise<void> {
-  const member = await getCurrentMember();
-  if (!member) redirect('/login');
-  const supa = getServiceClient();
-  const { data: win } = await supa.from('wins').select('member_id').eq('id', winId).maybeSingle();
-  if (!win) return;
-  if (member.role !== 'admin' && win.member_id !== member.id) {
-    throw new Error('You can only remove your own wins.');
-  }
-  const { error } = await supa.from('wins').delete().eq('id', winId);
-  if (error) throw new Error(`deleteWin: ${error.message}`);
-  revalidate();
+export async function deleteWin(winId: string): Promise<ActionResult> {
+  return guard(async () => {
+    const member = await getCurrentMember();
+    if (!member) redirect("/login");
+    const supa = getServiceClient();
+    const { data: win } = await supa
+      .from("wins")
+      .select("member_id")
+      .eq("id", winId)
+      .maybeSingle();
+    if (!win) return;
+    if (member.role !== "admin" && win.member_id !== member.id) {
+      deny("You can only remove your own wins.");
+    }
+    const { error } = await supa.from("wins").delete().eq("id", winId);
+    if (error) throw new Error(`deleteWin: ${error.message}`);
+    revalidate();
+  });
 }

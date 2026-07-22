@@ -44,7 +44,7 @@ export function EventComposer({
     start(async () => {
       setError(null);
       try {
-        const id = await createEvent({
+        const result = await createEvent({
           name,
           type,
           eventDate: date,
@@ -52,7 +52,13 @@ export function EventComposer({
           areaPostId: area,
           notes,
         });
-        router.push(`/events/${id}`);
+        // A refusal ("An event needs a name") comes back as a value; only a
+        // real failure throws. See lib/action-result.ts.
+        if (!result.ok) {
+          setError(result.message);
+          return;
+        }
+        router.push(`/events/${result.value}`);
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Could not create the event.');
       }

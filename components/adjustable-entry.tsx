@@ -1,5 +1,6 @@
 'use client';
 
+import { refusalMessage } from '@/lib/action-result';
 import { useState, useTransition } from 'react';
 import Link from 'next/link';
 import { saveAdjustment } from '@/app/stats/actions';
@@ -65,7 +66,13 @@ export function AdjustableEntryCard({
     start(async () => {
       setError(null);
       try {
-        await saveAdjustment(entry.statId, weekEnding, amount, names, note);
+        const refused = refusalMessage(
+          await saveAdjustment(entry.statId, weekEnding, amount, names, note),
+        );
+        if (refused) {
+          setError(refused);
+          return;
+        }
         setSaved(true);
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Could not save.');

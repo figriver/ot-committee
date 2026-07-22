@@ -58,7 +58,7 @@ export function EventEditor({
     start(async () => {
       setError(null);
       try {
-        await updateEvent(eventId, {
+        const result = await updateEvent(eventId, {
           name: n,
           type: t,
           eventDate: d,
@@ -66,6 +66,12 @@ export function EventEditor({
           areaPostId: ar,
           notes: no,
         });
+        // Check BEFORE closing: a refused edit must keep the form open with
+        // what they typed still in it.
+        if (!result.ok) {
+          setError(result.message);
+          return;
+        }
         setOpen(false);
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Could not save the event.');
@@ -76,7 +82,11 @@ export function EventEditor({
     start(async () => {
       setError(null);
       try {
-        await deleteEvent(eventId);
+        const result = await deleteEvent(eventId);
+        if (!result.ok) {
+          setError(result.message);
+          return;
+        }
         router.push('/events');
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Could not delete the event.');

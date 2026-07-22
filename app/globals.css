@@ -7487,3 +7487,17 @@ a {
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+/* A refusal shown next to the control that caused it (rollup select, win row) —
+   the message the server sent back, not a generic "something went wrong". */
+.gr-rollerr,
+.win-err {
+  display: block;
+  margin-top: 4px;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--danger-text);
+}
+.win-err {
+  margin: 6px 0 0;
+}

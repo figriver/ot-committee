@@ -1,5 +1,6 @@
 'use client';
 
+import { refusalMessage } from '@/lib/action-result';
 import { useState, useTransition } from 'react';
 import { correctValue, addNote } from '@/app/stats/history/actions';
 import { saveAdjustment } from '@/app/stats/actions';
@@ -103,7 +104,13 @@ function PlainUpdate({
     start(async () => {
       setError(null);
       try {
-        await correctValue(subjectType, subjectId, entry.currentWeek, val);
+        const refused = refusalMessage(
+          await correctValue(subjectType, subjectId, entry.currentWeek, val),
+        );
+        if (refused) {
+          setError(refused);
+          return;
+        }
         setSaved(true);
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Could not save.');
@@ -172,7 +179,13 @@ function AdjustableUpdate({
     start(async () => {
       setError(null);
       try {
-        await saveAdjustment(subjectId, entry.currentWeek, amount, names, note);
+        const refused = refusalMessage(
+          await saveAdjustment(subjectId, entry.currentWeek, amount, names, note),
+        );
+        if (refused) {
+          setError(refused);
+          return;
+        }
         setSaved(true);
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Could not save.');
@@ -277,7 +290,13 @@ function NoteForm({
     start(async () => {
       setError(null);
       try {
-        await addNote(subjectType, subjectId, date, body, onGraph);
+        const refused = refusalMessage(
+          await addNote(subjectType, subjectId, date, body, onGraph),
+        );
+        if (refused) {
+          setError(refused);
+          return;
+        }
         setSaved(true);
         setBody('');
       } catch (e) {

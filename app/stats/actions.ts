@@ -111,6 +111,7 @@ export async function submitReport(formData: FormData): Promise<void> {
 import { revalidatePath } from 'next/cache';
 import { canEditSubject } from '@/lib/history';
 import { assertWeekWritable } from '@/lib/lock';
+import { deny, guard, type ActionResult } from '@/lib/action-result';
 
 /** Split a names blob (newlines or commas) into distinct, trimmed names. */
 function parseNames(raw: string): string[] {
@@ -149,13 +150,14 @@ export async function saveAdjustment(
   manualRaw: string,
   namesRaw: string,
   noteRaw: string,
-): Promise<void> {
+): Promise<ActionResult> {
+  return guard(async () => {
   const member = await getCurrentMember();
   if (!member) redirect('/login');
   if (!(await canEditSubject(member, 'stat', statId))) {
-    throw new Error('You can only adjust stats you are responsible for.');
+    deny('You can only adjust stats you are responsible for.');
   }
-  if (!isWeekEnding(weekEnding)) throw new Error('Bad week.');
+  if (!isWeekEnding(weekEnding)) deny('Bad week.');
   await assertWeekWritable(member, weekEnding); // lock (admin override allowed)
 
   const supa = getServiceClient();
@@ -164,7 +166,7 @@ export async function saveAdjustment(
     .select('is_adjustable, base_kind')
     .eq('id', statId)
     .maybeSingle();
-  if (!stat?.is_adjustable) throw new Error('Not an adjustable stat.');
+  if (!stat?.is_adjustable) deny('Not an adjustable stat.');
 
   const note = noteRaw.trim();
   let manual: number;
@@ -193,10 +195,10 @@ export async function saveAdjustment(
       return;
     }
     manual = Number(trimmed);
-    if (!Number.isFinite(manual)) throw new Error('Manual amount must be a number.');
-    if (finalNote === '') throw new Error('A note is required for a manual adjustment.');
+    if (!Number.isFinite(manual)) deny('Manual amount must be a number.');
+    if (finalNote === '') deny('A note is required for a manual adjustment.');
   }
-  if (finalNote === '') throw new Error('A note is required for a manual adjustment.');
+  if (finalNote === '') deny('A note is required for a manual adjustment.');
 
   const now = new Date().toISOString();
   // created_by stays the ORIGINAL author (e.g. the import) — only updated_by
@@ -224,4 +226,5 @@ export async function saveAdjustment(
   if (error) throw new Error(`saveAdjustment: ${error.message}`);
   revalidatePath('/stats', 'layout');
   revalidatePath('/dashboard');
+  });
 }

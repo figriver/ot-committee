@@ -1,4 +1,5 @@
 import 'server-only';
+import { deny } from '@/lib/action-result';
 import { getServiceClient } from '@/lib/supabase/server';
 import { memberDisplayNames } from '@/lib/member-names';
 import {
@@ -105,7 +106,7 @@ const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 function cleanDate(v: string | null | undefined): string | null {
   const s = (v ?? '').trim();
   if (!s) return null;
-  if (!ISO_DATE.test(s)) throw new Error('A due date must be a real date.');
+  if (!ISO_DATE.test(s)) deny('A due date must be a real date.');
   return s;
 }
 
@@ -292,10 +293,10 @@ export async function addChecklistItem(
 ): Promise<string> {
   const spec = parentSpec(parent.type);
   if (!(await canManageChecklist(parent, viewer))) {
-    throw new Error(`Only an admin or the ${spec.noun}’s owner can add checklist items.`);
+    deny(`Only an admin or the ${spec.noun}’s owner can add checklist items.`);
   }
   const title = input.title.trim();
-  if (!title) throw new Error('A checklist item needs a title.');
+  if (!title) deny('A checklist item needs a title.');
 
   const supa = getServiceClient();
   // Append: next sort_order after the current last item.
@@ -336,13 +337,13 @@ export async function updateChecklistItem(
   if (!parent) return;
   const spec = parentSpec(parent.type);
   if (!(await canManageChecklist(parent, viewer))) {
-    throw new Error(`Only an admin or the ${spec.noun}’s owner can change checklist items.`);
+    deny(`Only an admin or the ${spec.noun}’s owner can change checklist items.`);
   }
 
   const fields: Record<string, unknown> = { updated_at: new Date().toISOString() };
   if (patch.title !== undefined) {
     const t = patch.title.trim();
-    if (!t) throw new Error('A checklist item needs a title.');
+    if (!t) deny('A checklist item needs a title.');
     fields.title = t;
   }
   if (patch.description !== undefined) {
@@ -380,7 +381,7 @@ export async function setChecklistItemDone(
   };
   const manage = await canManageChecklist(parent, viewer);
   if (!canMarkDone({ assigneeId: item.assignee_member_id as string | null }, viewer, manage)) {
-    throw new Error('Only the person this item is assigned to can mark it done.');
+    deny('Only the person this item is assigned to can mark it done.');
   }
 
   const { error } = await supa
@@ -402,7 +403,7 @@ export async function deleteChecklistItem(itemId: string, viewer: Member): Promi
   if (!parent) return;
   const spec = parentSpec(parent.type);
   if (!(await canManageChecklist(parent, viewer))) {
-    throw new Error(`Only an admin or the ${spec.noun}’s owner can remove checklist items.`);
+    deny(`Only an admin or the ${spec.noun}’s owner can remove checklist items.`);
   }
   const supa = getServiceClient();
   const { error } = await supa.from('checklist_items').delete().eq('id', itemId);

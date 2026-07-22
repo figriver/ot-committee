@@ -6,6 +6,11 @@ import { requireAdmin } from '@/lib/auth';
 import { getServiceClient } from '@/lib/supabase/server';
 
 /** Admin: create a named stat attached to a post. */
+// NOTE: wired to a plain `<form action={…}>`, which has nowhere to render a
+// returned value — so a refusal here still throws and still gets redacted in
+// production. Acceptable because the form is only rendered for someone already
+// permitted, and the field-level rules are enforced by the inputs themselves
+// (required, type=…). Converting this would mean useActionState, not a return.
 export async function createStat(formData: FormData): Promise<void> {
   await requireAdmin();
 

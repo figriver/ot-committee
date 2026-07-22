@@ -17,6 +17,11 @@ const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
  * they're the only admin). Role takes effect on the target's next load, since
  * every page reads role from the DB per request.
  */
+// NOTE: wired to a plain `<form action={…}>`, which has nowhere to render a
+// returned value — so a refusal here still throws and still gets redacted in
+// production. Acceptable because the form is only rendered for someone already
+// permitted, and the field-level rules are enforced by the inputs themselves
+// (required, type=…). Converting this would mean useActionState, not a return.
 export async function setMemberRole(formData: FormData): Promise<void> {
   await requireAdmin(); // server-side gate (redirects non-admins)
 
@@ -64,6 +69,11 @@ export async function setMemberRole(formData: FormData): Promise<void> {
  *
  * Blank clears the name, falling back to the board holder name, then the email.
  */
+// NOTE: wired to a plain `<form action={…}>`, which has nowhere to render a
+// returned value — so a refusal here still throws and still gets redacted in
+// production. Acceptable because the form is only rendered for someone already
+// permitted, and the field-level rules are enforced by the inputs themselves
+// (required, type=…). Converting this would mean useActionState, not a return.
 export async function setMemberName(formData: FormData): Promise<void> {
   await requireAdmin(); // server-side gate (redirects non-admins)
 

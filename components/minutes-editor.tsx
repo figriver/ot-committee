@@ -1,5 +1,6 @@
 'use client';
 
+import { refusalMessage } from '@/lib/action-result';
 import { useState, useTransition } from 'react';
 import Link from 'next/link';
 import { saveMinutes } from '@/app/meeting/actions';
@@ -39,7 +40,11 @@ export function MinutesEditor({
     start(async () => {
       setError(null);
       try {
-        await saveMinutes(weekEnding, body);
+        const refused = refusalMessage(await saveMinutes(weekEnding, body));
+        if (refused) {
+          setError(refused);
+          return;
+        }
         setSaved(body);
         setEditing(false);
       } catch (e) {

@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { getCurrentMember } from '@/lib/auth';
 import { getServiceClient } from '@/lib/supabase/server';
+import { refuse, done, type ActionResult } from '@/lib/action-result';
 
 // General hats are the committee's shared reference, so EVERY member reads them
 // and only an ADMIN writes them. The pages hide the controls from members, but
@@ -11,10 +12,24 @@ import { getServiceClient } from '@/lib/supabase/server';
 // member's role server-side and throws rather than redirecting, so the inline
 // editor can surface the reason.
 
-async function requireAdminMember() {
+const DENIED = 'Only an admin can edit general hats.';
+
+/** The session member if they may write general hats, else null. */
+async function adminOrNull() {
   const member = await getCurrentMember();
   if (!member) redirect('/login');
-  if (member.role !== 'admin') throw new Error('Only an admin can edit general hats.');
+  return member.role === 'admin' ? member : null;
+}
+
+/**
+ * For the actions wired straight to `<form action={…}>`: a plain form has
+ * nowhere to render a returned value, so a refusal there still has to throw.
+ * Only reachable by forging a request — an admin-only page never renders these
+ * forms for anyone else — so the redacted message costs a real user nothing.
+ */
+async function requireAdminMember() {
+  const member = await adminOrNull();
+  if (!member) throw new Error(DENIED);
   return member;
 }
 
@@ -46,6 +61,11 @@ async function assertGroupExists(groupKey: string) {
 }
 
 /** Create an empty hat in a group and open it for writing. */
+// NOTE: wired to a plain `<form action={…}>`, which has nowhere to render a
+// returned value — so a refusal here still throws and still gets redacted in
+// production. Acceptable because the form is only rendered for someone already
+// permitted, and the field-level rules are enforced by the inputs themselves
+// (required, type=…). Converting this would mean useActionState, not a return.
 export async function createGeneralHat(formData: FormData): Promise<void> {
   const member = await requireAdminMember();
   const title = String(formData.get('title') ?? '').trim();
@@ -72,8 +92,11 @@ export async function createGeneralHat(formData: FormData): Promise<void> {
 }
 
 /** Save a hat's long-form body (the editor's save handler). */
-export async function saveGeneralHatBody(id: string, body: string): Promise<void> {
-  const member = await requireAdminMember();
+export async function saveGeneralHatBody(id: string, body: string): Promise<ActionResult> {
+  // Client-invoked from HatEditor, which CAN show a message — so this one
+  // returns its refusal instead of throwing it away to redaction.
+  const member = await adminOrNull();
+  if (!member) return refuse(DENIED);
   const supa = getServiceClient();
   const { error } = await supa
     .from('general_hats')
@@ -81,9 +104,15 @@ export async function saveGeneralHatBody(id: string, body: string): Promise<void
     .eq('id', id);
   if (error) throw new Error(`saveGeneralHatBody: ${error.message}`);
   revalidate(id);
+  return done;
 }
 
 /** Rename a hat / move it to another group. Moving puts it at the group's end. */
+// NOTE: wired to a plain `<form action={…}>`, which has nowhere to render a
+// returned value — so a refusal here still throws and still gets redacted in
+// production. Acceptable because the form is only rendered for someone already
+// permitted, and the field-level rules are enforced by the inputs themselves
+// (required, type=…). Converting this would mean useActionState, not a return.
 export async function updateGeneralHatMeta(formData: FormData): Promise<void> {
   const member = await requireAdminMember();
   const id = String(formData.get('id') ?? '');
@@ -120,6 +149,11 @@ export async function updateGeneralHatMeta(formData: FormData): Promise<void> {
  * Swapping (rather than renumbering everything) keeps it to two writes and is
  * stable no matter how the numbers got where they are.
  */
+// NOTE: wired to a plain `<form action={…}>`, which has nowhere to render a
+// returned value — so a refusal here still throws and still gets redacted in
+// production. Acceptable because the form is only rendered for someone already
+// permitted, and the field-level rules are enforced by the inputs themselves
+// (required, type=…). Converting this would mean useActionState, not a return.
 export async function moveGeneralHat(formData: FormData): Promise<void> {
   await requireAdminMember();
   const id = String(formData.get('id') ?? '');
@@ -154,6 +188,11 @@ export async function moveGeneralHat(formData: FormData): Promise<void> {
 }
 
 /** Remove a hat entirely (admin mis-creates need a way back). */
+// NOTE: wired to a plain `<form action={…}>`, which has nowhere to render a
+// returned value — so a refusal here still throws and still gets redacted in
+// production. Acceptable because the form is only rendered for someone already
+// permitted, and the field-level rules are enforced by the inputs themselves
+// (required, type=…). Converting this would mean useActionState, not a return.
 export async function deleteGeneralHat(formData: FormData): Promise<void> {
   await requireAdminMember();
   const id = String(formData.get('id') ?? '');

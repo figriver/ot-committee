@@ -37,6 +37,11 @@ function revalidate(postIds: (string | null)[] = [], hatId?: string) {
 }
 
 /** Start a hat with no post: it needs its own name, since there is none to borrow. */
+// NOTE: wired to a plain `<form action={…}>`, which has nowhere to render a
+// returned value — so a refusal here still throws and still gets redacted in
+// production. Acceptable because the form is only rendered for someone already
+// permitted, and the field-level rules are enforced by the inputs themselves
+// (required, type=…). Converting this would mean useActionState, not a return.
 export async function createUnattachedHat(formData: FormData): Promise<void> {
   const member = await adminOrNull();
   if (!member) throw new Error(DENIED); // a plain <form>; there is no UI to show a result in

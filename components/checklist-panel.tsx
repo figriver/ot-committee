@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react';
 import { formatShortDate } from '@/lib/calendar';
 import type { ChecklistItem, ChecklistItemInput, ChecklistProgress } from '@/lib/checklist';
+import { refusalMessage, type ActionResult } from '@/lib/action-result';
 
 // THE CHECKLIST UI for the reusable primitive (CHECKLIST.md) — deliberately
 // parent-agnostic. It knows nothing about events: it takes items, a progress
@@ -12,10 +13,12 @@ import type { ChecklistItem, ChecklistItemInput, ChecklistProgress } from '@/lib
 // Each row is one person's piece of work: who has it, when it's due, whether
 // it's done, and — once ticked — who ticked it and when.
 
+// Each action may REFUSE with a message (lib/action-result.ts) instead of
+// throwing it into Next's production redaction — `run` below surfaces it.
 export type ChecklistActions = {
-  add: (input: ChecklistItemInput) => Promise<void>;
-  toggle: (itemId: string, done: boolean) => Promise<void>;
-  remove: (itemId: string) => Promise<void>;
+  add: (input: ChecklistItemInput) => Promise<ActionResult | void>;
+  toggle: (itemId: string, done: boolean) => Promise<ActionResult | void>;
+  remove: (itemId: string) => Promise<ActionResult | void>;
 };
 
 export type AssigneeOption = { id: string; label: string };
@@ -45,12 +48,13 @@ export function ChecklistPanel({
   const [assignee, setAssignee] = useState('');
   const [due, setDue] = useState('');
 
-  const run = (id: string | null, fn: () => Promise<void>) =>
+  const run = (id: string | null, fn: () => Promise<ActionResult | void>) =>
     start(async () => {
       setBusy(id);
       setError(null);
       try {
-        await fn();
+        const refused = refusalMessage(await fn());
+        if (refused) setError(refused);
       } catch (e) {
         setError(e instanceof Error ? e.message : 'That didn’t save.');
       } finally {
@@ -60,10 +64,17 @@ export function ChecklistPanel({
 
   const add = () =>
     run(null, async () => {
-      await actions.add({ title, assigneeId: assignee || null, dueDate: due || null });
+      const result = await actions.add({
+        title,
+        assigneeId: assignee || null,
+        dueDate: due || null,
+      });
+      // Keep what they typed if the server refused it.
+      if (refusalMessage(result)) return result;
       setTitle('');
       setDue('');
       // The assignee stays put: a list is usually built person by person.
+      return result;
     });
 
   return (

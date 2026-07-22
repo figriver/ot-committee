@@ -1,5 +1,6 @@
 'use client';
 
+import { refusalMessage } from '@/lib/action-result';
 import { useState, useTransition } from 'react';
 import { addWin, addUnattributedWin } from '@/app/wins/actions';
 
@@ -32,8 +33,15 @@ export function WinComposer({
     start(async () => {
       setError(null);
       try {
-        if (mode === 'unattributed') await addUnattributedWin(body, area, date);
-        else await addWin(body, area, date);
+        const refused = refusalMessage(
+          mode === 'unattributed'
+            ? await addUnattributedWin(body, area, date)
+            : await addWin(body, area, date),
+        );
+        if (refused) {
+          setError(refused);
+          return;
+        }
         setBody('');
         setSaved(true);
       } catch (e) {

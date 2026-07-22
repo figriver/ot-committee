@@ -1,4 +1,5 @@
 import 'server-only';
+import { deny } from '@/lib/action-result';
 import { getServiceClient } from '@/lib/supabase/server';
 import type { Member } from '@/lib/types';
 
@@ -125,7 +126,7 @@ export async function getWeekLock(member: Member, weekEnding: string): Promise<W
 export async function assertWeekOpen(weekEnding: string): Promise<void> {
   const cfg = await getLockConfig();
   if (isLockedAt(weekEnding, cfg)) {
-    throw new Error(`Week ending ${weekEnding} is closed.`);
+    deny(`Week ending ${weekEnding} is closed.`);
   }
 }
 
@@ -136,9 +137,7 @@ export async function assertWeekWritable(
 ): Promise<{ isOverride: boolean }> {
   const { locked, isOverride } = await getWeekLock(member, weekEnding);
   if (locked && !isOverride) {
-    throw new Error(
-      `Week ending ${weekEnding} is locked. Ask an admin if it needs correcting.`,
-    );
+    deny(`Week ending ${weekEnding} is locked. Ask an admin if it needs correcting.`);
   }
   return { isOverride };
 }

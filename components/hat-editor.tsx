@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { HatBody, HAT_PLACEHOLDER } from '@/components/hat-body';
+import type { ActionResult } from '@/lib/action-result';
 
 // The hat card: a read surface for everyone, an inline editor for whoever may
 // write it. Used by BOTH a post's hat and a general committee hat — the only
@@ -20,7 +21,8 @@ export function HatEditor({
 }: {
   cardTitle: string;
   initialBody: string;
-  save: (body: string) => Promise<void>;
+  /** Refusals come back as a value; only a crash throws (lib/action-result.ts). */
+  save: (body: string) => Promise<ActionResult | void>;
   canEdit: boolean;
   updatedByName: string | null;
   updatedAtLabel: string | null;
@@ -39,7 +41,11 @@ export function HatEditor({
     start(async () => {
       setError(null);
       try {
-        await save(body);
+        const result = await save(body);
+        if (result && !result.ok) {
+          setError(result.message);
+          return; // refused — keep the editor open with the text intact
+        }
         setSaved(body);
         setEditing(false);
       } catch (e) {
