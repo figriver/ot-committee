@@ -6,7 +6,12 @@ import { requireAdmin } from '@/lib/auth';
 import { getServiceClient } from '@/lib/supabase/server';
 import { sendMagicLink } from '@/lib/magic-link';
 
-export type InviteState = { ok: boolean; message: string };
+export type InviteState = {
+  ok: boolean;
+  message: string;
+  /** One line per address, so a bulk paste says what happened to each. */
+  details?: string[];
+};
 
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 
@@ -93,10 +98,55 @@ export async function setMemberName(formData: FormData): Promise<void> {
   redirect('/settings/members?named=1');
 }
 
+/** Guardrail on a single paste, so a runaway list can't fan out unbounded. */
+const MAX_INVITES = 100;
+
 /**
- * Admin-only: add an email to the allowlist as a member and send its magic link.
+ * Split a pasted address list into unique, lowercased emails. Accepts commas,
+ * semicolons and whitespace/newlines as separators, so a list copied out of a
+ * spreadsheet or a mail client works as-is.
+ */
+function parseEmailList(raw: string): { emails: string[]; invalid: string[] } {
+  const emails: string[] = [];
+  const invalid: string[] = [];
+  const seen = new Set<string>();
+  for (const part of raw.split(/[,;\s]+/)) {
+    const token = part.trim();
+    if (!token) continue;
+    const email = token.toLowerCase();
+    if (!EMAIL_RE.test(email)) {
+      invalid.push(token);
+      continue;
+    }
+    if (seen.has(email)) continue; // same address twice in one paste
+    seen.add(email);
+    emails.push(email);
+  }
+  return { emails, invalid };
+}
+
+/** Run `work` over `items` a few at a time — kinder to the shared mailer than
+ *  firing 100 sends at once, and far quicker than one at a time. */
+async function inBatches<T, R>(
+  items: T[],
+  size: number,
+  work: (item: T) => Promise<R>,
+): Promise<R[]> {
+  const out: R[] = [];
+  for (let i = 0; i < items.length; i += size) {
+    out.push(...(await Promise.all(items.slice(i, i + size).map(work))));
+  }
+  return out;
+}
+
+/**
+ * Admin-only: add one or more emails to the allowlist as members and send each
+ * its magic link. Addresses may be separated by commas (also semicolons or
+ * newlines), so a whole committee can be added in one paste.
+ *
  * Existing rows are left as-is (an existing admin is not downgraded); the link
- * is (re)sent either way.
+ * is (re)sent either way. Every address is reported on individually — one bad
+ * or unsendable address never discards the rest.
  */
 export async function inviteMember(
   _prev: InviteState,
@@ -104,46 +154,86 @@ export async function inviteMember(
 ): Promise<InviteState> {
   await requireAdmin(); // redirects non-admins
 
-  const email = String(formData.get('email') ?? '')
-    .trim()
-    .toLowerCase();
-  if (!EMAIL_RE.test(email)) {
-    return { ok: false, message: 'Please enter a valid email address.' };
+  const { emails, invalid } = parseEmailList(
+    String(formData.get('email') ?? ''),
+  );
+  if (emails.length === 0) {
+    return {
+      ok: false,
+      message: invalid.length
+        ? 'No valid email addresses found. Separate addresses with commas.'
+        : 'Please enter at least one email address.',
+      details: invalid.map((t) => `${t} — not a valid email address`),
+    };
+  }
+  if (emails.length > MAX_INVITES) {
+    return {
+      ok: false,
+      message: `That's ${emails.length} addresses — please invite at most ${MAX_INVITES} at a time.`,
+    };
   }
 
   const svc = getServiceClient();
-  const { data: existing, error: selErr } = await svc
+  // One read of the allowlist, compared case-insensitively: emails are stored
+  // lowercased by this action, but older rows may not be.
+  const { data: rows, error: selErr } = await svc
     .from('members')
-    .select('id')
-    .ilike('email', email)
-    .maybeSingle();
+    .select('email');
   if (selErr) {
-    return { ok: false, message: `Could not check member: ${selErr.message}` };
+    return { ok: false, message: `Could not check members: ${selErr.message}` };
   }
+  const known = new Set(
+    (rows ?? []).map((r) => String(r.email ?? '').toLowerCase()),
+  );
 
-  if (!existing) {
+  const fresh = emails.filter((e) => !known.has(e));
+  const already = emails.filter((e) => known.has(e));
+
+  if (fresh.length > 0) {
     const { error } = await svc
       .from('members')
-      .insert({ email, role: 'member', status: 'invited' });
+      .insert(fresh.map((email) => ({ email, role: 'member', status: 'invited' })));
     if (error) {
-      return { ok: false, message: `Could not add member: ${error.message}` };
+      return { ok: false, message: `Could not add members: ${error.message}` };
     }
   }
 
   // The allowlist row is what grants access; the magic link is a convenience.
   // If the (shared) mailer is rate-limited, keep the invite and say so — they
   // can still request a link from the login page.
-  let emailed = true;
-  try {
-    await sendMagicLink(email);
-  } catch {
-    emailed = false;
-  }
+  const sent: string[] = [];
+  const unsent: string[] = [];
+  await inBatches(emails, 4, async (email) => {
+    try {
+      await sendMagicLink(email);
+      sent.push(email);
+    } catch {
+      unsent.push(email);
+    }
+  });
+
+  const details = [
+    ...fresh.map(
+      (e) => `${e} — added${sent.includes(e) ? ', link sent' : ', link not sent'}`,
+    ),
+    ...already.map(
+      (e) =>
+        `${e} — already a member${sent.includes(e) ? ', link re-sent' : ', link not sent'}`,
+    ),
+    ...invalid.map((t) => `${t} — skipped, not a valid email address`),
+  ];
+
+  const parts: string[] = [];
+  if (fresh.length === 0) parts.push('No new members to add');
+  else parts.push(fresh.length === 1 ? 'Added 1 member' : `Added ${fresh.length} members`);
+  if (already.length) parts.push(`${already.length} already on the list`);
+  if (invalid.length) parts.push(`${invalid.length} skipped as invalid`);
+  parts.push(
+    unsent.length === 0
+      ? `magic link${emails.length === 1 ? '' : 's'} sent`
+      : `${sent.length} of ${emails.length} magic links sent — the rest can request one from the login page`,
+  );
+
   revalidatePath('/settings/members');
-  return {
-    ok: true,
-    message: emailed
-      ? `Invited ${email} — a magic link has been sent.`
-      : `Added ${email} to the allowlist, but the magic link couldn’t be sent right now (mailer limit). They can request one from the login page.`,
-  };
+  return { ok: true, message: `${parts.join(' · ')}.`, details };
 }

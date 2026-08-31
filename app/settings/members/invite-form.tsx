@@ -17,12 +17,15 @@ export function InviteForm() {
   return (
     <div className="invite-box">
       <form ref={formRef} action={formAction} className="invite-form">
-        <input
+        {/* A textarea, not <input type="email">: the browser's email validation
+            rejects a comma-separated list, and a pasted committee runs long. */}
+        <textarea
           name="email"
-          type="email"
           required
+          rows={2}
           autoComplete="off"
-          placeholder="new.member@example.com"
+          spellCheck={false}
+          placeholder="new.member@example.com, second@example.com"
           className="invite-input"
           disabled={pending}
         />
@@ -30,9 +33,19 @@ export function InviteForm() {
           {pending ? 'Inviting…' : 'Invite'}
         </button>
       </form>
+      <p className="invite-hint">
+        Add several at once — separate addresses with commas or new lines.
+      </p>
       {state.message && (
         <div className={state.ok ? 'invite-ok' : 'invite-err'}>
           {state.message}
+          {state.details && state.details.length > 0 && (
+            <ul className="invite-details">
+              {state.details.map((line) => (
+                <li key={line}>{line}</li>
+              ))}
+            </ul>
+          )}
         </div>
       )}
     </div>
