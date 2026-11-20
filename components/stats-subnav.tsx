@@ -7,13 +7,14 @@ import Link from 'next/link';
 // `active` is the current surface so the right tab is highlighted without any
 // client JS (each page passes its own).
 
-export type StatsTab = 'my' | 'enter' | 'committee' | 'bulk';
+export type StatsTab = 'my' | 'enter' | 'committee' | 'bulk' | 'report';
 
 const TABS: { key: StatsTab; label: string; href: string; hint: string; adminOnly?: boolean }[] = [
   { key: 'my', label: 'My Stats', href: '/dashboard', hint: 'Your graphs' },
   { key: 'enter', label: 'Enter', href: '/stats', hint: 'Weekly report' },
   { key: 'committee', label: 'Committee', href: '/committee', hint: 'Everyone, grouped' },
   { key: 'bulk', label: 'Bulk entry', href: '/stats/bulk', hint: 'Admin grid', adminOnly: true },
+  { key: 'report', label: 'Upline Report', href: '/stats/report', hint: 'Weekly form', adminOnly: true },
 ];
 
 export function StatsSubNav({ active, isAdmin = false }: { active: StatsTab; isAdmin?: boolean }) {

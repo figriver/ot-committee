@@ -1,8 +1,9 @@
 import Link from 'next/link';
 import { requireAdmin } from '@/lib/auth';
 import { getPostsForPicker, getStatsWithContext } from '@/lib/stats';
+import { getServiceClient } from '@/lib/supabase/server';
 import { AccountBar } from '@/components/account-bar';
-import { createStat } from './actions';
+import { createStat, saveStatDefinition } from './actions';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,6 +20,15 @@ export default async function StatsPage({
   ]);
 
   // group stats by post label for display
+  // The report lines, read straight from the stats table (report_line/label/
+  // definition were added by 0023).
+  const supa = getServiceClient();
+  const { data: reportStats } = await supa
+    .from('stats')
+    .select('id, name, report_line, report_label, definition')
+    .not('report_line', 'is', null)
+    .order('report_line', { ascending: true });
+
   const byPost = new Map<
     string,
     { label: string; stats: { id: string; name: string }[] }
@@ -86,6 +96,39 @@ export default async function StatsPage({
             Create stat
           </button>
         </form>
+
+        {/* The 13 lines of the issued upline form. Their definitions are the
+            wording OTC Int publishes, so they are editable here rather than
+            baked into the generator. */}
+        {(reportStats ?? []).length > 0 && (
+          <section className="stx-defs">
+            <h2 className="stx-subhead">Upline report definitions</h2>
+            <p className="stx-intro">
+              Printed under each stat on the weekly form. Paste the wording from the issued
+              form — anything left blank is shown as “not entered”, never guessed.
+            </p>
+            {(reportStats ?? []).map((s) => (
+              <form key={s.id} action={saveStatDefinition} className="stx-defform">
+                <input type="hidden" name="stat_id" value={s.id} />
+                <div className="stx-defhead">
+                  <span className="stx-defline">{s.report_line}</span>
+                  <span className="stx-defname">{s.report_label ?? s.name}</span>
+                  {!s.definition && <span className="stx-defmissing">not entered</span>}
+                </div>
+                <textarea
+                  name="definition"
+                  rows={3}
+                  className="stx-deftext"
+                  defaultValue={s.definition ?? ''}
+                  placeholder="Paste the definition from the issued form…"
+                />
+                <button type="submit" className="stx-defsave">
+                  Save definition
+                </button>
+              </form>
+            ))}
+          </section>
+        )}
 
         <h2 className="stx-subhead">Existing stats</h2>
         {byPost.size === 0 ? (

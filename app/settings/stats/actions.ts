@@ -35,3 +35,25 @@ export async function createStat(formData: FormData): Promise<void> {
   revalidatePath('/stats'); // the member report page, so new stats show there
   redirect('/settings/stats?created=1');
 }
+
+/**
+ * The definition paragraph printed under a stat on the upline report.
+ *
+ * It is DATA rather than code because OTC Int issues the form: when the wording
+ * changes, an admin pastes the new text and the next report picks it up — no
+ * deploy. Blank is allowed and meaningful: the report says so rather than
+ * printing something invented.
+ */
+export async function saveStatDefinition(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const id = String(formData.get('stat_id') ?? '');
+  const definition = String(formData.get('definition') ?? '').trim();
+  const supa = getServiceClient();
+  const { error } = await supa
+    .from('stats')
+    .update({ definition: definition === '' ? null : definition })
+    .eq('id', id);
+  if (error) throw new Error(`saveStatDefinition: ${error.message}`);
+  revalidatePath('/settings/stats');
+  revalidatePath('/stats/report');
+}

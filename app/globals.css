@@ -7807,3 +7807,254 @@ textarea.invite-input {
   border: 0;
   cursor: pointer;
 }
+
+/* ==========================================================================
+   Upline stat report (0023) — a PAPER-like preview of the issued form, so the
+   operator reads what will be sent before sending it.
+   ========================================================================== */
+.ur-wrap {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 24px 20px 64px;
+}
+.ur-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.ur-head h1 {
+  margin: 0;
+  font-size: var(--text-h1);
+  font-weight: 700;
+  color: var(--heading);
+}
+.ur-sub {
+  margin: 6px 0 0;
+  max-width: 62ch;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+.ur-download {
+  flex: none;
+  padding: 9px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent-contrast);
+  background: var(--accent);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+}
+.ur-download:hover {
+  background: var(--accent-hover);
+}
+.ur-weeknav {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 18px 0 12px;
+}
+.ur-weekbtn {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent);
+}
+.ur-weeklabel {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--heading);
+}
+.ur-warn {
+  padding: 10px 13px;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--warn-text);
+  background: var(--warn-bg);
+  border: 1px solid var(--warn-border);
+  border-radius: var(--radius-sm);
+}
+.ur-warn a {
+  color: var(--warn-text);
+  font-weight: 700;
+  text-decoration: underline;
+}
+.ur-rosternote {
+  margin: 10px 0 0;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+/* the preview itself — deliberately document-like, not app-like */
+.ur-paper {
+  margin-top: 18px;
+  padding: 28px 30px 34px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+.ur-title {
+  margin: 0;
+  text-align: center;
+  font-size: var(--text-h2);
+  font-weight: 700;
+  color: var(--heading);
+}
+.ur-for {
+  margin: 4px 0 22px;
+  text-align: center;
+  font-size: 13.5px;
+  color: var(--muted);
+}
+.ur-line {
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+  margin-top: 16px;
+}
+.ur-line:first-of-type {
+  border-top: 0;
+  margin-top: 0;
+}
+.ur-lineheads {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0 0 4px;
+  font-size: var(--text-card);
+  color: var(--heading);
+}
+.ur-num {
+  font-weight: 700;
+  color: var(--text-subtle);
+}
+.ur-label {
+  font-weight: 700;
+}
+.ur-value {
+  font-weight: 700;
+  color: var(--accent);
+}
+.ur-def {
+  margin: 0 0 10px;
+  max-width: 74ch;
+  font-size: 12.5px;
+  line-height: 1.55;
+  font-style: italic;
+  color: var(--muted);
+}
+.ur-defmissing {
+  margin: 0 0 10px;
+  font-size: 12px;
+  color: var(--warn-text);
+}
+.ur-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+.ur-table th,
+.ur-table td {
+  padding: 5px 8px;
+  border: 1px solid var(--border-strong);
+  text-align: left;
+  vertical-align: top;
+}
+.ur-table th {
+  background: var(--surface-sunken);
+  font-weight: 700;
+  color: var(--heading);
+}
+.ur-blankrow td {
+  height: 20px;
+}
+
+@media (max-width: 639px) {
+  .ur-wrap {
+    padding: 16px 14px 48px;
+  }
+  .ur-paper {
+    padding: 18px 14px 22px;
+  }
+  /* The form's tables are wide by nature; scroll them rather than crush them. */
+  .ur-table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+}
+
+/* Upline report definitions, edited in Settings → Manage Stats. */
+.stx-defs {
+  margin-top: 28px;
+}
+.stx-defform {
+  margin-bottom: 12px;
+  padding: 12px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+.stx-defhead {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 6px;
+}
+.stx-defline {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--muted);
+}
+.stx-defname {
+  font-size: var(--text-body);
+  font-weight: 700;
+  color: var(--heading);
+}
+.stx-defmissing {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--warn-text);
+  background: var(--warn-bg);
+  border: 1px solid var(--warn-border);
+  border-radius: var(--radius-pill);
+  padding: 1px 8px;
+}
+.stx-deftext {
+  width: 100%;
+  padding: 8px 10px;
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  resize: vertical;
+}
+.stx-defsave {
+  margin-top: 8px;
+  padding: 6px 13px;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--accent);
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+.stx-defsave:hover {
+  border-color: var(--accent);
+}
